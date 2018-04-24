@@ -30,6 +30,6 @@ function WebSocketcontroller(){
 	return instance;
 }
 
-WebSocketcontroller.__factory_name = 'WebSocketcontroller';
+WebSocketcontroller.__dashjs_factory_name = 'WebSocketcontroller';
 let factory = FactoryMaker.getSingletonFactory(webSocketController);
 export default factory;
