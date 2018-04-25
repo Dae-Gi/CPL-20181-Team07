@@ -28,16 +28,14 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-//import ThroughputRule from './ThroughputRule';
-//import InsufficientBufferRule from './InsufficientBufferRule';
-import RandomSwitchRule from './RandomSwitchRule.js';
+import ThroughputRule from './ThroughputRule';
+import InsufficientBufferRule from './InsufficientBufferRule';
 import AbandonRequestsRule from './AbandonRequestsRule';
-//import DroppedFramesRule from './DroppedFramesRule';
-//import SwitchHistoryRule from './SwitchHistoryRule';
+import DroppedFramesRule from './DroppedFramesRule';
+import SwitchHistoryRule from './SwitchHistoryRule';
 import BolaRule from './BolaRule';
 import FactoryMaker from '../../../core/FactoryMaker';
 import SwitchRequest from '../SwitchRequest';
-import WebSockController from '../../../sock/WebSockController.js';
 
 const QUALITY_SWITCH_RULES = 'qualitySwitchRules';
 const ABANDON_FRAGMENT_RULES = 'abandonFragmentRules';
@@ -53,28 +51,11 @@ function ABRRulesCollection(config) {
 
     let instance,
         qualitySwitchRules,
-        abandonFragmentRules.
-		webSockController,
-		qualityQueue,
-		abrCallback,
-		abrIdx	;
+        abandonFragmentRules;
 
     function initialize() {
         qualitySwitchRules = [];
         abandonFragmentRules = [];
-		qualityQueue = {};
-		webSockController = WebSockControoler(context).getInstance();
-		webSockController.setCallback(event=> {
-			let msg = JSON.parse(evert.date);
-			console.log(msg);
-			const switchRequest = SwitchRequest(context).create();
-			switchRequest.reason = msg.reason;
-			switchRequest.value = msg.quality;
-			switchCallback(msg.rule, msg.idx, switchRequest);
-		});
-		abrIdx = 0;
-
-		console.log('Websock Module Test : socket list', webSockController);
 
         if (mediaPlayerModel.getUseDefaultABRRules()) {
             // Only one of BolaRule and ThroughputRule will give a switchRequest.quality !== SwitchRequest.NO_CHANGE.
@@ -86,27 +67,24 @@ function ABRRulesCollection(config) {
                     mediaPlayerModel: mediaPlayerModel
                 })
             );
-            //qualitySwitchRules.push(
-            //  ThroughputRule(context).create({
-            //        metricsModel: metricsModel,
-            //        dashMetrics: dashMetrics
-            //    })
-            //);
-           //qualitySwitchRules.push(
-            //    InsufficientBufferRule(context).create({
-            //        metricsModel: metricsModel,
-            //        dashMetrics: dashMetrics
-            //   })
-            //);
-            //qualitySwitchRules.push(
-            //    SwitchHistoryRule(context).create()
-            //);
-            //qualitySwitchRules.push(
-            //    DroppedFramesRule(context).create()
-           // );
-		   qualitySwitchRules.push(RandomSwitchRule(context).create({
-			   webSockConnection: webSockController.getConnection()
-		   }));
+            qualitySwitchRules.push(
+                ThroughputRule(context).create({
+                    metricsModel: metricsModel,
+                    dashMetrics: dashMetrics
+                })
+            );
+            qualitySwitchRules.push(
+                InsufficientBufferRule(context).create({
+                    metricsModel: metricsModel,
+                    dashMetrics: dashMetrics
+                })
+            );
+            qualitySwitchRules.push(
+                SwitchHistoryRule(context).create()
+            );
+            qualitySwitchRules.push(
+                DroppedFramesRule(context).create()
+            );
             abandonFragmentRules.push(
                 AbandonRequestsRule(context).create({
                     metricsModel: metricsModel,
@@ -127,10 +105,6 @@ function ABRRulesCollection(config) {
                 abandonFragmentRules.push(rule.rule(context).create());
             }
         });
-    }
-
-    function setABRCallback(callback) {
-        abrCallback = callback;
     }
 
     function getActiveRules(srArray) {
@@ -179,29 +153,12 @@ function ABRRulesCollection(config) {
         return SwitchRequest(context).create(quality);
     }
 
-    function getMaxQuality(rulesContext, streamProcessor) {
-        abrIdx = abrIdx + 1;
-        qualityQueue[abrIdx] = { 'streamProcessor': streamProcessor };
-        qualitySwitchRules.map(rule => { qualityQueue[abrIdx][rule.name] = false; rule.getMaxIndex(rulesContext, abrIdx, switchCallback); });
-        //return maxQuality || SwitchRequest(context).create();
-    }
+    function getMaxQuality(rulesContext) {
+        const switchRequestArray = qualitySwitchRules.map(rule => rule.getMaxIndex(rulesContext));
+        const activeRules = getActiveRules(switchRequestArray);
+        const maxQuality = getMinSwitchRequest(activeRules);
 
-    function switchCallback(rule, idx, quality) {
-        qualityQueue[idx][rule] = quality;
-        console.log('switch callback (quality)', quality);
-        let results = [];
-        for (let key in qualityQueue[idx]) {
-            if (qualityQueue[idx][key] === false) return;
-            results.push(qualityQueue[idx][key]);
-        }
-        let streamProcessor = qualityQueue[idx].streamProcessor;
-        delete qualityQueue[idx];
-
-        console.log('switch callback (results)', results);
-        let activeRules = getActiveRules(results);
-        let maxQuality = getMinSwitchRequest(activeRules);
-        console.log('switch callback (maxQuality)', maxQuality);
-        abrCallback(maxQuality || SwitchRequest(context).create(), streamProcessor);
+        return maxQuality || SwitchRequest(context).create();
     }
 
     function shouldAbandonFragment(rulesContext) {
@@ -226,8 +183,7 @@ function ABRRulesCollection(config) {
         initialize: initialize,
         reset: reset,
         getMaxQuality: getMaxQuality,
-        shouldAbandonFragment: shouldAbandonFragment,
-        setABRCallback: setABRCallback
+        shouldAbandonFragment: shouldAbandonFragment
     };
 
     return instance;
