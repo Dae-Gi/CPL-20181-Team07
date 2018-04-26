@@ -52,6 +52,8 @@ import EventBus from './../core/EventBus';
 import Events from './../core/events/Events';
 import MediaPlayerEvents from './MediaPlayerEvents';
 import FactoryMaker from '../core/FactoryMaker';
+import WebSockController from '../sock/WebSockcontroller.js';
+
 import {
     getVersionString
 }
@@ -248,6 +250,8 @@ function MediaPlayer() {
             attachSource(source);
         }
 
+        let webSockController = WebSockController(context).getInstance();
+        webSockController.initialize();
         log('[dash.js ' + getVersion() + '] ' + 'MediaPlayer has been initialized');
     }
 

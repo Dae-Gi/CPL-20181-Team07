@@ -44,6 +44,9 @@ import DroppedFramesHistory from '../rules/DroppedFramesHistory';
 import ThroughputHistory from '../rules/ThroughputHistory';
 import {HTTPRequest} from '../vo/metrics/HTTPRequest';
 import Debug from '../../core/Debug';
+import StreamProcessor from '../StreamProcessor';
+import StreamInfo from '../vo/StreamInfo';
+import DashMetrics from '../../dash/DashMetrics';
 
 const ABANDON_LOAD = 'abandonload';
 const ALLOW_LOAD = 'allowload';
@@ -166,7 +169,9 @@ function AbrController() {
 
     function setConfig(config) {
         if (!config) return;
-
+        if (config.AbrRulesCollection) {
+            abrRulesCollection.setABRCallback(setQualityCallback);
+        }
         if (config.streamController) {
             streamController = config.streamController;
         }
@@ -373,8 +378,6 @@ function AbrController() {
 
     function checkPlaybackQuality(type) {
         if (type  && streamProcessorDict && streamProcessorDict[type]) {
-            const streamInfo = streamProcessorDict[type].getStreamInfo();
-            const streamId = streamInfo ? streamInfo.id : null;
             const oldQuality = getQualityFor(type);
             const rulesContext = RulesContext(context).create({
                 abrController: instance,
@@ -392,27 +395,29 @@ function AbrController() {
                 }
             }
             if (getAutoSwitchBitrateFor(type)) {
-                const minIdx = getMinAllowedIndexFor(type);
-                const topQualityIdx = getTopQualityIndexFor(type, streamId);
-                const switchRequest = abrRulesCollection.getMaxQuality(rulesContext);
-                let newQuality = switchRequest.quality;
-                if (minIdx !== undefined && newQuality < minIdx) {
-                    newQuality = minIdx;
-                }
-                if (newQuality > topQualityIdx) {
-                    newQuality = topQualityIdx;
-                }
+                abrRulesCollection.getMaxQuality(rulesContext, StreamProcessor);
+            }
+        }
+        function setQualityCallback(switchRequest, streamProcessor) {
+            const type = streamProcessor.getType();
+            const streamInfo = streamProcessor.getStreamInfo();
+            const streamId = streamInfo.id;
+            const oldQuality = getQualityFor(type, StreamInfo);
 
-                switchHistoryDict[type].push({oldValue: oldQuality, newValue: newQuality});
-
-                if (newQuality > SwitchRequest.NO_CHANGE && newQuality != oldQuality) {
-                    if (abandonmentStateDict[type].state === ALLOW_LOAD || newQuality > oldQuality) {
-                        changeQuality(type, oldQuality, newQuality, topQualityIdx, switchRequest.reason);
-                    }
-                } else if (debug.getLogToBrowserConsole()) {
-                    const bufferLevel = dashMetrics.getCurrentBufferLevel(metricsModel.getReadOnlyMetricsFor(type));
-                    log('AbrController (' + type + ') stay on ' + oldQuality + '/' + topQualityIdx + ' (buffer: ' + bufferLevel + ')');
+            const topQualityIdx = getTopQualityIndexFor(type, streamId);
+            let newQuality = switchRequest.value;
+            if (newQuality > topQualityIdx) {
+                newQuality = topQualityIdx;
+            }
+            console.log('setQuality Callback : ', oldQuality, newQuality);
+            switchHistoryDict[type].push({ oldValue: oldQuality, newValue: newQuality });
+            if (newQuality > SwitchRequest.NO_CHANGE && newQuality != oldQuality) {
+                if (abandonmentStateDict[type].state === ALLOW_LOAD || newQuality > oldQuality) {
+                    changeQuality(type, streamInfo, oldQuality, newQuality, topQualityIdx, switchRequest.reason);
                 }
+            } else if (debug.getLogToBrowserConsole()) {
+                const bufferLevel = DashMetrics.getCurrentBufferLevel(metricsModel.getReadOnlyMetricsFor(type));
+                log('AbrController (' + type + ') stay on ' + oldQuality + '/' + topQualityIdx + ' (buffer: ' + bufferLevel + ')');
             }
         }
     }
