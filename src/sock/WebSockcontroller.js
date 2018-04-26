@@ -11,6 +11,7 @@ function WebSocketController() {
     function initialize() {
         console.log('webSock Module Test : call initializer');
         conn = new WebSocket(HOST_NAME + ':' + HOST_PORT + '/ws');
+        console.log(conn.readyState);
     }
 
     function getConnection() {

@@ -61,7 +61,7 @@ function ABRRulesCollection(config) {
         qualityQueue = {};
         webSockController = WebSockController(context).getInstance();
         webSockController.setCallback(event => {
-            let msg = JSON.parse(evert.date);
+            let msg = JSON.parse(event.data);
             console.log(msg);
             const switchRequest = SwitchRequest(context).create();
             switchRequest.reason = msg.reason;
