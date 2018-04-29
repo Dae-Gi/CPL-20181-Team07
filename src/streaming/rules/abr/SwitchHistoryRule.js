@@ -1,10 +1,9 @@
 
-import FactoryMaker from '../../../core/FactoryMaker';
+import FactoryMaker from '../../../core/FactoryMaker.js';
 import Debug from '../../../core/Debug';
-import SwitchRequest from '../SwitchRequest';
+import SwitchRequest from '../SwitchRequest.js';
 
 function SwitchHistoryRule() {
-
     const context = this.context;
     const log = Debug(context).getInstance().log;
 
@@ -17,12 +16,12 @@ function SwitchHistoryRule() {
 
 
     function getMaxIndex(rulesContext) {
-        const switchRequestHistory = rulesContext ? rulesContext.getSwitchHistory() : null;
-        const switchRequests = switchRequestHistory ? switchRequestHistory.getSwitchRequests() : [];
+        const switchRequestHistory = rulesContext.getSwitchHistory();
+        let switchRequests = switchRequestHistory.getSwitchRequests();
         let drops = 0;
         let noDrops = 0;
         let dropSize = 0;
-        const switchRequest = SwitchRequest(context).create();
+        let switchRequest = SwitchRequest(context).create();
 
         for (let i = 0; i < switchRequests.length; i++) {
             if (switchRequests[i] !== undefined) {
@@ -31,9 +30,9 @@ function SwitchHistoryRule() {
                 dropSize += switchRequests[i].dropSize;
 
                 if (drops + noDrops >= SAMPLE_SIZE && (drops / noDrops > MAX_SWITCH)) {
-                    switchRequest.quality = (i > 0 && switchRequests[i].drops > 0) ? i - 1 : i;
-                    switchRequest.reason = {index: switchRequest.quality, drops: drops, noDrops: noDrops, dropSize: dropSize};
-                    log('Switch history rule index: ' + switchRequest.quality + ' samples: ' + (drops + noDrops) + ' drops: ' + drops);
+                    switchRequest.value = i > 0 ? i - 1 : 0;
+                    switchRequest.reason = {index: switchRequest.value, drops: drops, noDrops: noDrops, dropSize: dropSize};
+                    log('Switch history rule index: ' + switchRequest.value + ' samples: ' + (drops + noDrops) + ' drops: ' + drops);
                     break;
                 }
             }
@@ -48,5 +47,7 @@ function SwitchHistoryRule() {
 }
 
 
-SwitchHistoryRule.__dashjs_factory_name = 'SwitchHistoryRule';
-export default FactoryMaker.getClassFactory(SwitchHistoryRule);
+SwitchHistoryRule.__dashjs_factory_name = 'SwitchRequest';
+let factory = FactoryMaker.getClassFactory(SwitchHistoryRule);
+
+export default factory;

@@ -40,6 +40,7 @@
  */
 import KeyPair from '../vo/KeyPair';
 import ClearKeyKeySet from '../vo/ClearKeyKeySet';
+import FactoryMaker from '../../../core/FactoryMaker';
 
 function ClearKey() {
 
@@ -47,9 +48,9 @@ function ClearKey() {
 
     function getServerURLFromMessage(url, message/*, messageType*/) {
         // Build ClearKey server query string
-        const jsonMsg = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
+        var jsonMsg = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
         url += '/?';
-        for (let i = 0; i < jsonMsg.kids.length; i++) {
+        for (var i = 0; i < jsonMsg.kids.length; i++) {
             url += jsonMsg.kids[i] + '&';
         }
         url = url.substring(0, url.length - 1);
@@ -68,11 +69,11 @@ function ClearKey() {
         if (!serverResponse.hasOwnProperty('keys')) {
             return null;
         }
-        let keyPairs = [];
+        var keyPairs = [];
         for (let i = 0; i < serverResponse.keys.length; i++) {
-            let keypair = serverResponse.keys[i];
-            let keyid = keypair.kid.replace(/=/g, '');
-            let key = keypair.k.replace(/=/g, '');
+            var keypair = serverResponse.keys[i];
+            var keyid = keypair.kid.replace(/=/g, '');
+            var key = keypair.k.replace(/=/g, '');
 
             keyPairs.push(new KeyPair(keyid, key));
         }
@@ -95,4 +96,4 @@ function ClearKey() {
 }
 
 ClearKey.__dashjs_factory_name = 'ClearKey';
-export default dashjs.FactoryMaker.getSingletonFactory(ClearKey); /* jshint ignore:line */
+export default FactoryMaker.getSingletonFactory(ClearKey);

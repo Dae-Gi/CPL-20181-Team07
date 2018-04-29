@@ -29,11 +29,11 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+import FactoryMaker from '../../../../core/FactoryMaker';
 import HandlerHelpers from '../../utils/HandlerHelpers';
 
-function BufferLevelHandler(config) {
+function BufferLevelHandler() {
 
-    config = config || {};
     let instance,
         reportingController,
         n,
@@ -45,8 +45,6 @@ function BufferLevelHandler(config) {
     let handlerHelpers = HandlerHelpers(context).getInstance();
 
     let storedVOs = [];
-
-    const metricsConstants = config.metricsConstants;
 
     function getLowestBufferLevelVO() {
         try {
@@ -63,7 +61,7 @@ function BufferLevelHandler(config) {
     }
 
     function intervalCallback() {
-        let vo = getLowestBufferLevelVO();
+        var vo = getLowestBufferLevelVO();
 
         if (vo) {
             if (lastReportedTime !== vo.t) {
@@ -93,7 +91,7 @@ function BufferLevelHandler(config) {
     }
 
     function handleNewMetric(metric, vo, type) {
-        if (metric === metricsConstants.BUFFER_LEVEL) {
+        if (metric === 'BufferLevel') {
             storedVOs[type] = vo;
         }
     }
@@ -108,4 +106,4 @@ function BufferLevelHandler(config) {
 }
 
 BufferLevelHandler.__dashjs_factory_name = 'BufferLevelHandler';
-export default dashjs.FactoryMaker.getClassFactory(BufferLevelHandler); /* jshint ignore:line */
+export default FactoryMaker.getClassFactory(BufferLevelHandler);

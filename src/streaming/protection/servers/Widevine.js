@@ -28,6 +28,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+import FactoryMaker from '../../../core/FactoryMaker';
 
 function Widevine() {
 
@@ -65,4 +66,4 @@ function Widevine() {
 }
 
 Widevine.__dashjs_factory_name = 'Widevine';
-export default dashjs.FactoryMaker.getSingletonFactory(Widevine); /* jshint ignore:line */
+export default FactoryMaker.getSingletonFactory(Widevine);

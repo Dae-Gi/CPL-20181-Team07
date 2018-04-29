@@ -36,6 +36,7 @@ function ReceiverController($scope) {
                 pendingValue,
                 numBitratesValue,
                 bufferLengthValue = 0,
+                point,
                 lastFragmentDuration,
                 lastFragmentDownloadTime,
                 droppedFramesValue = 0;
@@ -80,7 +81,7 @@ function ReceiverController($scope) {
                     bitrateIndexValue = 0;
                 }
 
-                if (isNaN(numBitratesValue) || numBitratesValue === undefined || numBitratesValue === -1) {
+                if (isNaN(numBitratesValue) || numBitratesValue === undefined) {
                     numBitratesValue = 0;
                 }
 

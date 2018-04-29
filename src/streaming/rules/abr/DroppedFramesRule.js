@@ -1,10 +1,9 @@
 
-import FactoryMaker from '../../../core/FactoryMaker';
-import SwitchRequest from '../SwitchRequest';
+import FactoryMaker from '../../../core/FactoryMaker.js';
+import SwitchRequest from '../SwitchRequest.js';
 import Debug from '../../../core/Debug';
 
 function DroppedFramesRule() {
-
     const context = this.context;
     const log = Debug(context).getInstance().log;
 
@@ -13,9 +12,9 @@ function DroppedFramesRule() {
 
 
     function getMaxIndex(rulesContext) {
-        const droppedFramesHistory = rulesContext.getDroppedFramesHistory();
+        let droppedFramesHistory = rulesContext.getDroppedFramesHistory();
         if (droppedFramesHistory) {
-            const dfh = droppedFramesHistory.getFrameHistory();
+            let dfh = droppedFramesHistory.getFrameHistory();
             let droppedFrames = 0;
             let totalFrames = 0;
             let maxIndex = SwitchRequest.NO_CHANGE;
@@ -43,4 +42,6 @@ function DroppedFramesRule() {
 }
 
 DroppedFramesRule.__dashjs_factory_name = 'DroppedFramesRule';
-export default FactoryMaker.getClassFactory(DroppedFramesRule);
+let factory = FactoryMaker.getClassFactory(DroppedFramesRule);
+
+export default factory;

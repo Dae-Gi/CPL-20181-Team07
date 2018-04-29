@@ -28,12 +28,11 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-
+import FactoryMaker from '../../../../core/FactoryMaker';
 import MetricSerialiser from '../../utils/MetricSerialiser';
 import RNG from '../../utils/RNG';
 
-function DVBReporting(config) {
-    config = config || {};
+function DVBReporting() {
     let instance;
 
     let context = this.context;
@@ -48,12 +47,10 @@ function DVBReporting(config) {
     let allowPendingRequestsToCompleteOnReset = true;
     let pendingRequests = [];
 
-    const metricsConstants = config.metricsConstants;
-
     function doGetRequest(url, successCB, failureCB) {
-        let req = new XMLHttpRequest();
-        const oncomplete = function () {
-            let reqIndex = pendingRequests.indexOf(req);
+        var req = new XMLHttpRequest();
+        var oncomplete = function () {
+            var reqIndex = pendingRequests.indexOf(req);
 
             if (reqIndex === -1) {
                 return;
@@ -98,10 +95,10 @@ function DVBReporting(config) {
             // This reporting mechanism operates by creating one HTTP GET
             // request for every entry in the top level list of the metric.
             vos.forEach(function (vo) {
-                let url = metricSerialiser.serialise(vo);
+                var url = metricSerialiser.serialise(vo);
 
                 // this has been proposed for errata
-                if (USE_DRAFT_DVB_SPEC && (type !== metricsConstants.DVB_ERRORS)) {
+                if (USE_DRAFT_DVB_SPEC && (type !== 'DVBErrors')) {
                     url = `metricname=${type}&${url}`;
                 }
 
@@ -126,7 +123,7 @@ function DVBReporting(config) {
     }
 
     function initialize(entry, rc) {
-        let probability;
+        var probability;
 
         rangeController = rc;
 
@@ -181,4 +178,4 @@ function DVBReporting(config) {
 }
 
 DVBReporting.__dashjs_factory_name = 'DVBReporting';
-export default dashjs.FactoryMaker.getClassFactory(DVBReporting); /* jshint ignore:line */
+export default FactoryMaker.getClassFactory(DVBReporting);

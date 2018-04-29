@@ -32,18 +32,15 @@
 import KeyPair from '../vo/KeyPair';
 import ClearKeyKeySet from '../vo/ClearKeyKeySet';
 import CommonEncryption from '../CommonEncryption';
-import ProtectionConstants from '../../constants/ProtectionConstants';
+import FactoryMaker from '../../../core/FactoryMaker';
 
-const uuid = 'e2719d58-a985-b3c9-781a-b030af78d30e';
-const systemString = ProtectionConstants.CLEARKEY_KEYSTEM_STRING;
+const uuid = '1077efec-c0b2-4d02-ace3-3c1e52e2fb4b';
+const systemString = 'org.w3.clearkey';
 const schemeIdURI = 'urn:uuid:' + uuid;
 
-function KeySystemClearKey(config) {
+function KeySystemClearKey() {
 
-    config = config || {};
     let instance;
-    const BASE64 = config.BASE64;
-
     /**
      * Returns desired clearkeys (as specified in the CDM message) from protection data
      *
@@ -55,15 +52,15 @@ function KeySystemClearKey(config) {
      * @memberof KeySystemClearKey
      */
     function getClearKeysFromProtectionData(protectionData, message) {
-        let clearkeySet = null;
+        var clearkeySet = null;
         if (protectionData) {
             // ClearKey is the only system that does not require a license server URL, so we
             // handle it here when keys are specified in protection data
-            const jsonMsg = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
-            const keyPairs = [];
-            for (let i = 0; i < jsonMsg.kids.length; i++) {
-                const clearkeyID = jsonMsg.kids[i];
-                const clearkey = (protectionData.clearkeys && protectionData.clearkeys.hasOwnProperty(clearkeyID)) ? protectionData.clearkeys[clearkeyID] : null;
+            var jsonMsg = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
+            var keyPairs = [];
+            for (var i = 0; i < jsonMsg.kids.length; i++) {
+                var clearkeyID = jsonMsg.kids[i];
+                var clearkey = (protectionData.clearkeys.hasOwnProperty(clearkeyID)) ? protectionData.clearkeys[clearkeyID] : null;
                 if (!clearkey) {
                     throw new Error('DRM: ClearKey keyID (' + clearkeyID + ') is not known!');
                 }
@@ -76,7 +73,7 @@ function KeySystemClearKey(config) {
     }
 
     function getInitData(cp) {
-        return CommonEncryption.parseInitDataFromContentProtection(cp, BASE64);
+        return CommonEncryption.parseInitDataFromContentProtection(cp);
     }
 
     function getRequestHeadersFromMessage(/*message*/) {
@@ -91,14 +88,6 @@ function KeySystemClearKey(config) {
         return null;
     }
 
-    function getCDMData() {
-        return null;
-    }
-
-    function getSessionId(/*cp*/) {
-        return null;
-    }
-
     instance = {
         uuid: uuid,
         schemeIdURI: schemeIdURI,
@@ -107,8 +96,6 @@ function KeySystemClearKey(config) {
         getRequestHeadersFromMessage: getRequestHeadersFromMessage,
         getLicenseRequestFromMessage: getLicenseRequestFromMessage,
         getLicenseServerURLFromInitData: getLicenseServerURLFromInitData,
-        getCDMData: getCDMData,
-        getSessionId: getSessionId,
         getClearKeysFromProtectionData: getClearKeysFromProtectionData
     };
 
@@ -116,4 +103,4 @@ function KeySystemClearKey(config) {
 }
 
 KeySystemClearKey.__dashjs_factory_name = 'KeySystemClearKey';
-export default dashjs.FactoryMaker.getSingletonFactory(KeySystemClearKey); /* jshint ignore:line */
+export default FactoryMaker.getSingletonFactory(KeySystemClearKey);

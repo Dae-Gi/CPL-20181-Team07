@@ -39,7 +39,6 @@ class URIFragmentData {
         this.track = null;
         this.id = null;
         this.s = null;
-        this.r = null;
     }
 }
 

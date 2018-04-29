@@ -29,15 +29,17 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+import FactoryMaker from '../../../core/FactoryMaker';
+
 function MetricSerialiser() {
 
     // For each entry in the top level list within the metric (in the case
     // of the DVBErrors metric each entry corresponds to an "error event"
     // described in clause 10.8.4) the Player shall:
     function serialise(metric) {
-        let pairs = [];
-        let obj = [];
-        let key,
+        var pairs = [];
+        var obj = [];
+        var key,
             value;
 
         // Take each (key, value) pair from the metric entry and create a
@@ -65,7 +67,7 @@ function MetricSerialiser() {
                     obj = [];
 
                     value.forEach(function (v) {
-                        let isBuiltIn = Object.prototype.toString.call(v).slice(8, -1) !== 'Object';
+                        var isBuiltIn = Object.prototype.toString.call(v).slice(8, -1) !== 'Object';
 
                         obj.push(isBuiltIn ? v : serialise(v));
                     });
@@ -94,4 +96,4 @@ function MetricSerialiser() {
 }
 
 MetricSerialiser.__dashjs_factory_name = 'MetricSerialiser';
-export default dashjs.FactoryMaker.getSingletonFactory(MetricSerialiser); /* jshint ignore:line */
+export default FactoryMaker.getSingletonFactory(MetricSerialiser);

@@ -16,6 +16,7 @@
     <!--Libs-->
     <script src="app/lib/jquery/jquery-3.1.1.min.js"></script>
 
+
     <script src="app/lib/angular/angular.min.js"></script>
     <script src="app/lib/angular/angular-resource.min.js"></script>
     <script src="app/lib/angular/angular-flot.js"></script>
@@ -29,8 +30,6 @@
     <script src="../../dist/dash.all.debug.js"></script>
     <script src="../../contrib/akamai/controlbar/ControlBar.js"></script>
     <script src="app/main.js"></script>
-    <script src="app/rules/DownloadRatioRule.js"></script>
-    <script src="app/rules/ThroughputRule.js"></script>
 
 </head>
 <body ng-controller="DashController" >
@@ -45,15 +44,8 @@
                     <span ng-show="item.submenu">{{item.name}}</span>
                     <ul ng-show="item.submenu">
                         <li ng-repeat="subitem in item.submenu">
-                            <span ng-click="setStream(subitem)" ng-if="subitem.url"
+                            <span ng-click="setStream(subitem)"
                                   data-dismiss="modal">{{subitem.name}}</span>
-                            <span ng-if="!subitem.url">{{subitem.name}}</span>
-                            <ul ng-if="subitem.submenu">
-                                <li ng-repeat="subsubitem in subitem.submenu">
-                                    <span ng-click="setStream(subsubitem)"
-                                        data-dismiss="modal">{{subsubitem.name}}</span>
-                                </li>
-                            </ul>
                         </li>
                     </ul>
                   </li>
@@ -71,17 +63,16 @@
               <a href="http://dashif.org/" target="_blank"><img class="image" src="app/img/if.png"/></a>
               <span id="big-title">Reference Client</span>
                 <span ng-bind="version"></span>
-                <span id="commit-info"><!-- commit-info --></span>
             </div>
 
             <!-- Using iframe to solve pre-flight request issue from GIT-->
             <div class="top-buttons">
                 <iframe id="star-button"
-                        src="//ghbtns.com/github-btn.html?user=Dash-Industry-Forum&repo=dash.js&type=watch&count=true&size=large"
+                        src="http://ghbtns.com/github-btn.html?user=Dash-Industry-Forum&repo=dash.js&type=watch&count=true&size=large"
                         height="30" width="150">
                 </iframe>
                 <iframe id="fork-button"
-                        src="//ghbtns.com/github-btn.html?user=Dash-Industry-Forum&repo=dash.js&type=fork&count=true&size=large"
+                        src="http://ghbtns.com/github-btn.html?user=Dash-Industry-Forum&repo=dash.js&type=fork&count=true&size=large"
                         height="30" width="150" >
                 </iframe>
             </div>
@@ -94,25 +85,17 @@
                         Stream <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu multi-level" role="menu" aria-labelledby="dropdownMenu">
-                        <li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams" ng-mouseover="onStreamItemHover(item)">
+                        <li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams">
                             <a tabindex="-1" href="#">{{item.name}}</a>
                             <ul class="dropdown-menu">
-                                <li class="dropdown-submenu" ng-repeat="subitem in item.submenu" ng-if="subitem.submenu">
-                                    <a tabindex="-1" href="#">{{subitem.name}}</a>
-                                    <ul class="dropdown-menu">
-                                        <li ng-repeat="subsubitem in subitem.submenu">
-                                            <a title="{{ subsubitem.moreInfo && 'See ' + subsubitem.moreInfo + ' for more information' || undefined }}"
-                                               ng-click="setStream(subsubitem)">{{subsubitem.name}}</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li ng-repeat="subitem in item.submenu" ng-if="subitem.url">
+                                <li ng-repeat="subitem in item.submenu">
                                     <a title="{{ subitem.moreInfo && 'See ' + subitem.moreInfo + ' for more information' || undefined }}"
                                        ng-click="setStream(subitem)">{{subitem.name}}</a>
                                 </li>
                             </ul>
                         </li>
                     </ul>
+
                 </div>
                 <div id="mobile-streams" class="input-group-btn">
                     <button type="button" class="btn btn-primary" data-toggle="modal" href="#streamModal">
@@ -122,7 +105,6 @@
                 <input type="text" class="form-control" ng-model="selectedItem.url">
                 <span class="input-group-btn">
                     <button class="btn btn-default" ng-click="toggleOptionsGutter(!optionsGutter)" ng-cloak>{{getOptionsButtonLabel()}}</button>
-                    <button class="btn btn-default" type="button" ng-click="doStop()">Stop</button>
                     <button class="btn btn-primary" type="button" ng-click="doLoad()">Load</button>
                 </span>
             </div>
@@ -130,6 +112,7 @@
 
         <!-- OPTIONS MENU-->
         <div ng-cloak class="row options-wrapper" ng-class="{'options-show':optionsGutter, 'options-hide':!optionsGutter}">
+
             <div class="options-item">
                 <div class="options-item-title">Playback</div>
                 <div class="options-item-body">
@@ -154,39 +137,14 @@
                         Allow Local Storage
                     </label>
                     <label class="topcoat-checkbox" data-toggle="tooltip" data-placement="right"
-                           title="Enables jump small gaps (discontinuities) in the media streams">
-                        <input type="checkbox" id="jumpGapsCB" ng-model="jumpGapsSelected" ng-change="toggleJumpGaps()" ng-checked="jumpGapsSelected">
-                        Jump Small Gaps
-                    </label>
-                    <label class="topcoat-checkbox" data-toggle="tooltip" data-placement="right"
-                           title="">
-                        <input type="checkbox" id="lowLatencyModeCB" ng-model="lowLatencyModeSelected" ng-change="togglelowLatencyMode()" ng-checked="lowLatencyModeSelected">
-                        Low Latency Mode
-                    </label>
-                    <label class="topcoat-checkbox" data-toggle="tooltip" data-placement="right"
                            title="Enables faster ABR switching (time to render). Only when the new quality is higher than the current.">
                         <input type="checkbox" id="fastSwitchCB" ng-model="fastSwitchSelected" ng-change="toggleFastSwitch()" ng-checked="fastSwitchSelected">
                         Fast Switching ABR
                     </label>
-                    <label data-toggle="tooltip" data-placement="right"
-                           title="Dynamically switch between BOLA and Throughput strategies.">
-                        <input  type="radio" id="abrDynamic" autocomplete="off" name="abrStrategy" checked="checked" ng-click="changeABRStrategy('abrDynamic')" >
-                        ABR Strategy: Dynamic
-                    </label>
-                    <label  data-toggle="tooltip" data-placement="right"
-                            title="Choose bitrate based on buffer level.">
-                        <input type="radio" id="abrBola" autocomplete="off" name="abrStrategy" ng-click="changeABRStrategy('abrBola')">
-                        ABR Strategy: BOLA
-                    </label>
-                    <label  data-toggle="tooltip" data-placement="right"
-                            title="Choose bitrate based on recent throughput.">
-                        <input type="radio" id="abrThroughput" autocomplete="off" name="abrStrategy" ng-click="changeABRStrategy('abrThroughput')">
-                        ABR Strategy: Throughput
-                    </label>
                     <label class="topcoat-checkbox" data-toggle="tooltip" data-placement="right"
-                           title="ABR - Use custom ABR rules">
-                        <input type="checkbox" id="customABRRules" ng-model="customABRRulesSelected" ng-change="toggleUseCustomABRRules()" ng-checked="customABRRulesSelected">
-                        Use Custom ABR Rules
+                           title="BOLA is an ABR ruleset. When enabled, it will disable the default heuristics in Dash.js that depend strictly on average and real-time throughput measurements">
+                        <input type="checkbox" id="bolaCB" ng-model="bolaSelected" ng-change="toggleBufferOccupancyABR()" ng-checked="bolaSelected">
+                        Buffer Occupancy ABR
                     </label>
                 </div>
             </div>
@@ -204,51 +162,29 @@
                         </ul>
                     </div>
                     <p><label  class="options-label" >{{drmKeySystem}}</label></p>
-                    <div id="drmLicenseForm" ng-show="drmKeySystem">
+                    <div id="drmLicenseForm" >
                         <label class="options-label">License URL:</label>
                         <input type="text" class="form-control" placeholder="" ng-model="drmLicenseURL">
                     </div>
+                    <!--<button class="btn btn-primary license" type="button" ng-click="doLicenseFetch()">Pre-Fetch Licenses</button>-->
                 </div>
             </div>
-            <div class="options-item">
-                <div class="options-item-title">Initial Settings</div>
-                <div class="options-item-body">
-                    <label class="options-label">Audio:</label>
-                    <input type="text" class="form-control" placeholder="audio initial lang, e.g. 'en'" ng-model="initialSettings.audio">
-                    <label class="options-label">Video:</label>
-                    <input type="text" class="form-control" placeholder="initial role, e.g. 'alternate'" ng-model="initialSettings.video">        <label class="options-label">Text:</label>
-                    <input type="text" class="form-control" placeholder="text initial lang, e.g. 'en'" ng-model="initialSettings.text">
-                    <label class="topcoat-checkbox" data-toggle="tooltip" data-placement="right"
-                           title="Enable subtitle on loading text">
-                        <input type="checkbox" id="enableTextAtLoading" ng-model="initialSettings.textEnabled">
-                        Enable Text At Loading
-                    </label>
 
-                </div>
-            </div>
             <div class="options-item">
                 <div class="options-item-title">Track Switch Mode</div>
                 <div class="options-item-body">
                     <label class="options-label">Audio:</label>
-                    <label data-toggle="tooltip" data-placement="right"
-                           title="When a track is switched, the portion of the buffer that contains old track data is cleared">
-                        <input  type="radio" id="always-replace-audio" autocomplete="off" name="track-switch-audio" checked="checked" ng-click="changeTrackSwitchMode('alwaysReplace', 'audio')" >
-                        always replace
-                    </label>
-                    <label data-toggle="tooltip" data-placement="right"
-                           title="When a track is switched, the portion of the buffer that contains old track data is NOT cleared">
-                        <input type="radio" id="never-replace-audio" autocomplete="off" name="track-switch-audio" ng-click="changeTrackSwitchMode('neverReplace', 'audio')">
-                        never replace
-                    </label>
+                    <input type="text" class="form-control" placeholder="initial lang, e.g. 'en'" ng-model="initialSettings.audio">
                     <label class="options-label">Video:</label>
+                    <input type="text" class="form-control" placeholder="initial role, e.g. 'alternate'" ng-model="initialSettings.video">
                     <label data-toggle="tooltip" data-placement="right"
                            title="When a track is switched, the portion of the buffer that contains old track data is cleared">
-                        <input  type="radio" id="always-replace-video" autocomplete="off" name="track-switch-video" checked="checked" ng-click="changeTrackSwitchMode('alwaysReplace', 'video')" >
+                        <input  type="radio" id="always-replace" autocomplete="off" name="track-switch" checked="checked" ng-click="changeTrackSwitchMode('alwaysReplace', 'video')" >
                         always replace
                     </label>
-                    <label data-toggle="tooltip" data-placement="right"
-                           title="When a track is switched, the portion of the buffer that contains old track data is NOT cleared">
-                        <input type="radio" id="never-replace-video" autocomplete="off" name="track-switch-video" ng-click="changeTrackSwitchMode('neverReplace', 'video')">
+                    <label  data-toggle="tooltip" data-placement="right"
+                            title="When a track is switched, the portion of the buffer that contains old track data is NOT cleared">
+                        <input type="radio" id="never-replace" autocomplete="off" name="track-switch" ng-click="changeTrackSwitchMode('neverReplace', 'video')">
                         never replace
                     </label>
                 </div>
@@ -259,7 +195,7 @@
         <!--VIDEO PLAYER / CONTROLS -->
         <div class="row">
             <div class="dash-video-player col-md-9">
-                <div id="videoContainer" class="videoContainer">
+                <div id="videoContainer">
                     <video></video>
                     <div id="video-caption"></div>
                     <div id="videoController" class="video-controller unselectable" ng-cloak>
@@ -285,14 +221,7 @@
                         </div>
                         <span id="videoDuration" class="duration-display">00:00:00</span>
                         <div class="seekContainer">
-                            <div id="seekbar" class="seekbar seekbar-complete">
-                                <div id="seekbar-buffer" class="seekbar seekbar-buffer"></div>
-                                <div id="seekbar-play" class="seekbar seekbar-play"></div>
-                            </div>
-                        </div>
-                        <div id="thumbnail-container" class="thumbnail-container">
-                            <div id="thumbnail-elem" class="thumbnail-elem"></div>
-                            <div id="thumbnail-time-label" class="thumbnail-time-label"></div>
+                            <input type="range" id="seekbar" value="0" class="seekbar" min="0" step="0.01"/>
                         </div>
                     </div>
                 </div>
@@ -311,6 +240,10 @@
                           Audio
                           </a>
                       </li>
+                      <!--<li><a href="#textStatsTab" role="tab" data-toggle="tab">-->
+                          <!--Text-->
+                          <!--</a>-->
+                      <!--</li>-->
                     </ul>
 
                     <!-- Tab panes -->
@@ -360,11 +293,6 @@
                                 <label class="text-primary" for="videoRatioCB" data-toggle="tooltip" data-placement="top"
                                   title="The minimum, average and maximum ratio of the segment playback time to total download time over the last 4 segments">Ratio (min|avg|max) :</label> {{videoRatio}}
                             </div>
-                            <div class="text-success" ng-show="isDynamic">
-                                <input id="liveLatencyCB" type="checkbox" ng-model="chartState.video.liveLatency.selected" ng-change="enableChartByName('liveLatency', 'video')" >
-                                <label class="text-primary" for="liveLatencyCB" data-toggle="tooltip" data-placement="top"
-                                  title="Difference between live time and current playback position in seconds">Live Latency:</label> {{videoLiveLatency}}
-                            </div>
                         </div>
                       </div>
                       <div class="tab-pane fade" id="audioStatsTab">
@@ -410,36 +338,26 @@
                                 <label class="text-primary" for="audioRatioCB" data-toggle="tooltip" data-placement="top"
                                   title="The minimum, average and maximum ratio of the segment playback time to total download time over the last 4 segments">Ratio (min|avg|max) :</label> {{audioRatio}}
                             </div>
-                            <div class="text-success">
-                                <input id="liveLatencyCB" type="checkbox" ng-model="chartState.audio.liveLatency.selected" ng-change="enableChartByName('liveLatency', 'audio')" >
-                                <label class="text-primary" for="liveLatencyCB" data-toggle="tooltip" data-placement="top"
-                                  title="Number of seconds of difference between the real live and the playing live">Live Latency:</label> {{audioLiveLatency}}
-                            </div>
                         </div>
                       </div>
+                      <!--<div class="tab-pane fade" id="textStatsTab">-->
+                        <!--<div class="panel-body panel-stats">-->
+                            <!--&lt;!&ndash; TEXT STATS ITEMS&ndash;&gt;-->
+                            <!--<p class="text-primary">-->
+                                <!--<span class="text-success" data-toggle="tooltip" data-placement="top" -->
+                                      <!--title="The length of the forward buffer, in seconds">-->
+                                    <!--<em>Language:</em> {{audioBufferLength}}-->
+                                <!--</span>-->
+                            <!--</p>-->
+                        <!--</div>-->
+                      <!--</div>-->
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ERROR MODAL -->
-        <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header errorModalHeader">
-                        <h5 class="modal-title" id="errorModalLabel">Error {{errorType}}</h5>
-                    </div>
-                    <div class="modal-body">
-                        {{error}}
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-      </div>
-
         <!-- CHARTING -->
+
        <div class="chart-panel">
             <div class="chart-controls">
                 <div class="btn-group">

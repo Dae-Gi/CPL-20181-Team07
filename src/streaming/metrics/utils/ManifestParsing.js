@@ -1,16 +1,15 @@
 import Metrics from '../vo/Metrics';
 import Range from '../vo/Range';
 import Reporting from '../vo/Reporting';
+import FactoryMaker from '../../../core/FactoryMaker';
 
 function ManifestParsing (config) {
-    config = config || {};
     let instance;
     let dashManifestModel = config.dashManifestModel;
-    const constants = config.constants;
 
     function getMetricsRangeStartTime(manifest, dynamic, range) {
         var mpd = dashManifestModel.getMpd(manifest);
-        var voPeriods;
+        var periods;
         var presentationStartTime = 0;
         var reportingStartTime;
 
@@ -24,10 +23,10 @@ function ManifestParsing (config) {
             // For services with MPD@type='static', the start time is indicated
             // in Media Presentation time and is relative to the PeriodStart
             // time of the first Period in this MPD.
-            voPeriods = this.getRegularPeriods(mpd);
+            periods = this.getRegularPeriods(manifest, mpd);
 
-            if (voPeriods.length) {
-                presentationStartTime = voPeriods[0].start;
+            if (periods.length) {
+                presentationStartTime = periods[0].start;
             }
         }
 
@@ -36,7 +35,7 @@ function ManifestParsing (config) {
         // consumption.
         reportingStartTime = presentationStartTime;
 
-        if (range && range.hasOwnProperty(constants.START_TIME)) {
+        if (range && range.hasOwnProperty('starttime')) {
             reportingStartTime += range.starttime;
         }
 
@@ -83,7 +82,7 @@ function ManifestParsing (config) {
                     metric.Reporting_asArray.forEach(reporting => {
                         var reportingEntry = new Reporting();
 
-                        if (reporting.hasOwnProperty(constants.SCHEME_ID_URI)) {
+                        if (reporting.hasOwnProperty('schemeIdUri')) {
                             reportingEntry.schemeIdUri = reporting.schemeIdUri;
                         } else {
                             // Invalid Reporting. schemeIdUri must be set. Ignore.
@@ -118,4 +117,4 @@ function ManifestParsing (config) {
 }
 
 ManifestParsing.__dashjs_factory_name = 'ManifestParsing';
-export default dashjs.FactoryMaker.getSingletonFactory(ManifestParsing); /* jshint ignore:line */
+export default FactoryMaker.getSingletonFactory(ManifestParsing);

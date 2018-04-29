@@ -33,108 +33,68 @@ import EventBus from '../../../core/EventBus';
 import Events from '../../../core/events/Events';
 import FactoryMaker from '../../../core/FactoryMaker';
 import Debug from '../../../core/Debug';
-import SwitchRequest from '../SwitchRequest';
+import SwitchRequest from '../SwitchRequest.js';
 
 function InsufficientBufferRule(config) {
 
-    config = config || {};
-    const INSUFFICIENT_BUFFER_SAFETY_FACTOR = 0.5;
+    let context = this.context;
+    let log = Debug(context).getInstance().log;
+    let eventBus = EventBus(context).getInstance();
 
-    const context = this.context;
-    const log = Debug(context).getInstance().log;
-
-    const eventBus = EventBus(context).getInstance();
-    const metricsModel = config.metricsModel;
-    const dashMetrics = config.dashMetrics;
+    let metricsModel = config.metricsModel;
 
     let instance,
-        bufferStateDict;
+        bufferStateDict,
+        lastSwitchTime,
+        waitToSwitchTime;
 
     function setup() {
-        resetInitialSettings();
+        bufferStateDict = {};
+        lastSwitchTime = 0;
+        waitToSwitchTime = 1000;
         eventBus.on(Events.PLAYBACK_SEEKING, onPlaybackSeeking, instance);
     }
 
-    function checkConfig() {
-        if (!metricsModel || !metricsModel.hasOwnProperty('getReadOnlyMetricsFor') || !dashMetrics || !dashMetrics.hasOwnProperty('getCurrentBufferLevel')) {
-            throw new Error('Missing config parameter(s)');
-        }
-    }
-    /*
-     * InsufficientBufferRule does not kick in before the first BUFFER_LOADED event happens. This is reset at every seek.
-     *
-     * If a BUFFER_EMPTY event happens, then InsufficientBufferRule returns switchRequest.quality=0 until BUFFER_LOADED happens.
-     *
-     * Otherwise InsufficientBufferRule gives a maximum bitrate depending on throughput and bufferLevel such that
-     * a whole fragment can be downloaded before the buffer runs out, subject to a conservative safety factor of 0.5.
-     * If the bufferLevel is low, then InsufficientBufferRule avoids rebuffering risk.
-     * If the bufferLevel is high, then InsufficientBufferRule give a high MaxIndex allowing other rules to take over.
-     */
     function getMaxIndex (rulesContext) {
-        const switchRequest = SwitchRequest(context).create();
+        var now = new Date().getTime();
+        var mediaType = rulesContext.getMediaInfo().type;
+        var metrics = metricsModel.getReadOnlyMetricsFor(mediaType);
+        var lastBufferStateVO = (metrics.BufferState.length > 0) ? metrics.BufferState[metrics.BufferState.length - 1] : null;
+        let switchRequest = SwitchRequest(context).create();
 
-        if (!rulesContext || !rulesContext.hasOwnProperty('getMediaType')) {
+        if (now - lastSwitchTime < waitToSwitchTime ||
+            lastBufferStateVO === null) {
             return switchRequest;
         }
 
-        checkConfig();
-
-        const mediaType = rulesContext.getMediaType();
-        const metrics = metricsModel.getReadOnlyMetricsFor(mediaType);
-        const lastBufferStateVO = (metrics.BufferState.length > 0) ? metrics.BufferState[metrics.BufferState.length - 1] : null;
-        const representationInfo = rulesContext.getRepresentationInfo();
-        const fragmentDuration = representationInfo.fragmentDuration;
-
-        // Don't ask for a bitrate change if there is not info about buffer state or if fragmentDuration is not defined
-        if (!lastBufferStateVO || !wasFirstBufferLoadedEventTriggered(mediaType, lastBufferStateVO) || !fragmentDuration) {
-            return switchRequest;
-        }
-
-        if (lastBufferStateVO.state === BufferController.BUFFER_EMPTY) {
+        setBufferInfo(mediaType, lastBufferStateVO.state);
+        // After the sessions first buffer loaded event , if we ever have a buffer empty event we want to switch all the way down.
+        if (lastBufferStateVO.state === BufferController.BUFFER_EMPTY && bufferStateDict[mediaType].firstBufferLoadedEvent !== undefined) {
             log('Switch to index 0; buffer is empty.');
-            switchRequest.quality = 0;
+            switchRequest.value = 0;
             switchRequest.reason = 'InsufficientBufferRule: Buffer is empty';
-        } else {
-            const mediaInfo = rulesContext.getMediaInfo();
-            const abrController = rulesContext.getAbrController();
-            const throughputHistory = abrController.getThroughputHistory();
-
-            const bufferLevel = dashMetrics.getCurrentBufferLevel(metrics);
-            const throughput = throughputHistory.getAverageThroughput(mediaType);
-            const latency = throughputHistory.getAverageLatency(mediaType);
-            const bitrate = throughput * (bufferLevel / fragmentDuration) * INSUFFICIENT_BUFFER_SAFETY_FACTOR;
-
-            switchRequest.quality = abrController.getQualityForBitrate(mediaInfo, bitrate, latency);
-            switchRequest.reason = 'InsufficientBufferRule: being conservative to avoid immediate rebuffering';
         }
 
+        lastSwitchTime = now;
         return switchRequest;
     }
 
-    function wasFirstBufferLoadedEventTriggered(mediaType, currentBufferState) {
-        bufferStateDict[mediaType] = bufferStateDict[mediaType] || {};
-
-        let wasTriggered = false;
-        if (bufferStateDict[mediaType].firstBufferLoadedEvent) {
-            wasTriggered = true;
-        } else if (currentBufferState && currentBufferState.state === BufferController.BUFFER_LOADED) {
-            bufferStateDict[mediaType].firstBufferLoadedEvent = true;
-            wasTriggered = true;
+    function setBufferInfo(type, state) {
+        bufferStateDict[type] = bufferStateDict[type] || {};
+        bufferStateDict[type].state = state;
+        if (state === BufferController.BUFFER_LOADED && !bufferStateDict[type].firstBufferLoadedEvent) {
+            bufferStateDict[type].firstBufferLoadedEvent = true;
         }
-        return wasTriggered;
-    }
-
-    function resetInitialSettings() {
-        bufferStateDict = {};
     }
 
     function onPlaybackSeeking() {
-        resetInitialSettings();
+        bufferStateDict = {};
     }
 
     function reset() {
-        resetInitialSettings();
         eventBus.off(Events.PLAYBACK_SEEKING, onPlaybackSeeking, instance);
+        bufferStateDict = {};
+        lastSwitchTime = 0;
     }
 
     instance = {

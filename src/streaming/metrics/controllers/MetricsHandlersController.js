@@ -30,21 +30,19 @@
  */
 
 import MetricsHandlerFactory from '../metrics/MetricsHandlerFactory';
+import FactoryMaker from '../../../core/FactoryMaker';
+import MediaPlayerEvents from '../../MediaPlayerEvents';
 
 function MetricsHandlersController(config) {
-
-    config = config || {};
     let handlers = [];
 
     let instance;
     let context = this.context;
     let eventBus = config.eventBus;
-    const Events = config.events;
 
     let metricsHandlerFactory = MetricsHandlerFactory(context).getInstance({
         log: config.log,
-        eventBus: config.eventBus,
-        metricsConstants: config.metricsConstants
+        eventBus: config.eventBus
     });
 
     function handle(e) {
@@ -56,7 +54,7 @@ function MetricsHandlersController(config) {
     function initialize(metrics, reportingController) {
         metrics.split(',').forEach(
             (m, midx, ms) => {
-                let handler;
+                var handler;
 
                 // there is a bug in ISO23009-1 where the metrics attribute
                 // is a comma-separated list but HttpList key can contain a
@@ -86,13 +84,13 @@ function MetricsHandlersController(config) {
         );
 
         eventBus.on(
-            Events.METRIC_ADDED,
+            MediaPlayerEvents.METRIC_ADDED,
             handle,
             instance
         );
 
         eventBus.on(
-            Events.METRIC_UPDATED,
+            MediaPlayerEvents.METRIC_UPDATED,
             handle,
             instance
         );
@@ -100,13 +98,13 @@ function MetricsHandlersController(config) {
 
     function reset() {
         eventBus.off(
-            Events.METRIC_ADDED,
+            MediaPlayerEvents.METRIC_ADDED,
             handle,
             instance
         );
 
         eventBus.off(
-            Events.METRIC_UPDATED,
+            MediaPlayerEvents.METRIC_UPDATED,
             handle,
             instance
         );
@@ -125,4 +123,4 @@ function MetricsHandlersController(config) {
 }
 
 MetricsHandlersController.__dashjs_factory_name = 'MetricsHandlersController';
-export default dashjs.FactoryMaker.getClassFactory(MetricsHandlersController); /* jshint ignore:line */
+export default FactoryMaker.getClassFactory(MetricsHandlersController);

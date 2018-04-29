@@ -1,4 +1,5 @@
 import FactoryMaker from '../../core/FactoryMaker';
+import Error from '../vo/Error';
 
 /**
  * Creates an instance of an EBMLParser class which implements a large subset
@@ -8,7 +9,6 @@ import FactoryMaker from '../../core/FactoryMaker';
  */
 function EBMLParser(config) {
 
-    config = config || {};
     let instance;
 
     let data = new DataView(config.data);
@@ -37,8 +37,8 @@ function EBMLParser(config) {
     function consumeTag(tag, test) {
         let found = true;
         let bytesConsumed = 0;
-        let p1,
-            p2;
+        let p1;
+        let p2;
 
         if (test === undefined) {
             test = false;
@@ -172,7 +172,7 @@ function EBMLParser(config) {
         let extraBytes = -1;
         let num = 0;
         let ch = data.getUint8(pos);
-        let i = 0;
+        let i;
 
         for (i = 0; i < maxBytes; i += 1) {
             if ((ch & mask) === mask) {
@@ -228,8 +228,9 @@ function EBMLParser(config) {
      */
     function getMatroskaUint(size) {
         let val = 0;
+        let i;
 
-        for (let i = 0; i < size; i += 1) {
+        for (i = 0; i < size; i += 1) {
             val <<= 8;
             val |= data.getUint8(pos + i) & 0xff;
         }

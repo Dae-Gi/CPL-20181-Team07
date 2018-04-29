@@ -34,6 +34,7 @@ import ProtectionEvents from './ProtectionEvents';
 import ProtectionModel_21Jan2015 from './models/ProtectionModel_21Jan2015';
 import ProtectionModel_3Feb2014 from './models/ProtectionModel_3Feb2014';
 import ProtectionModel_01b from './models/ProtectionModel_01b';
+import FactoryMaker from '../../core/FactoryMaker';
 
 const APIS_ProtectionModel_01b = [
     // Un-prefixed as per spec
@@ -117,7 +118,7 @@ function Protection() {
         let controller = null;
 
         let protectionKeyController = ProtectionKeyController(context).getInstance();
-        protectionKeyController.setConfig({log: config.log, BASE64: config.BASE64});
+        protectionKeyController.setConfig({log: config.log});
         protectionKeyController.initialize();
 
         let protectionModel =  getProtectionModel(config);
@@ -126,11 +127,9 @@ function Protection() {
             controller = ProtectionController(context).create({
                 protectionModel: protectionModel,
                 protectionKeyController: protectionKeyController,
+                adapter: config.adapter,
                 eventBus: config.eventBus,
-                log: config.log,
-                events: config.events,
-                BASE64: config.BASE64,
-                constants: config.constants
+                log: config.log
             });
             config.capabilities.setEncryptedMediaSupported(true);
         }
@@ -141,23 +140,25 @@ function Protection() {
 
         let log = config.log;
         let eventBus = config.eventBus;
-        let errHandler = config.errHandler;
-        let videoElement = config.videoModel ? config.videoModel.getElement() : null;
+        let videoElement = config.videoModel.getElement();
 
-        if ((!videoElement || videoElement.onencrypted !== undefined) &&
-            (!videoElement || videoElement.mediaKeys !== undefined)) {
+        if (videoElement.onencrypted !== undefined &&
+            videoElement.mediaKeys !== undefined &&
+            navigator.requestMediaKeySystemAccess !== undefined &&
+            typeof navigator.requestMediaKeySystemAccess === 'function') {
+
             log('EME detected on this user agent! (ProtectionModel_21Jan2015)');
-            return ProtectionModel_21Jan2015(context).create({log: log, eventBus: eventBus, events: config.events});
+            return ProtectionModel_21Jan2015(context).create({log: log, eventBus: eventBus});
 
         } else if (getAPI(videoElement, APIS_ProtectionModel_3Feb2014)) {
 
             log('EME detected on this user agent! (ProtectionModel_3Feb2014)');
-            return ProtectionModel_3Feb2014(context).create({log: log, eventBus: eventBus, events: config.events, api: getAPI(videoElement, APIS_ProtectionModel_3Feb2014)});
+            return ProtectionModel_3Feb2014(context).create({log: log, eventBus: eventBus, api: getAPI(videoElement, APIS_ProtectionModel_3Feb2014)});
 
         } else if (getAPI(videoElement, APIS_ProtectionModel_01b)) {
 
             log('EME detected on this user agent! (ProtectionModel_01b)');
-            return ProtectionModel_01b(context).create({log: log, eventBus: eventBus, errHandler: errHandler, events: config.events, api: getAPI(videoElement, APIS_ProtectionModel_01b)});
+            return ProtectionModel_01b(context).create({log: log, eventBus: eventBus, api: getAPI(videoElement, APIS_ProtectionModel_01b)});
 
         } else {
 
@@ -169,8 +170,8 @@ function Protection() {
 
     function getAPI(videoElement, apis) {
 
-        for (let i = 0; i < apis.length; i++) {
-            let api = apis[i];
+        for (var i = 0; i < apis.length; i++) {
+            var api = apis[i];
             // detect if api is supported by browser
             // check only first function in api -> should be fine
             if (typeof videoElement[api[Object.keys(api)[0]]] !== 'function') {
@@ -191,7 +192,6 @@ function Protection() {
 }
 
 Protection.__dashjs_factory_name = 'Protection';
-let factory = dashjs.FactoryMaker.getClassFactory(Protection); /* jshint ignore:line */
+let factory = FactoryMaker.getClassFactory(Protection);
 factory.events = ProtectionEvents;
-dashjs.FactoryMaker.updateClassFactory(Protection.__dashjs_factory_name, factory); /* jshint ignore:line */
 export default factory;

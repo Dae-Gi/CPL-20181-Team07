@@ -35,19 +35,18 @@ import {getIndexBasedSegment, decideSegmentListRangeForTemplate} from './Segment
 
 function ListSegmentsGetter(config, isDynamic) {
 
-    config = config || {};
-    const timelineConverter = config.timelineConverter;
+    let timelineConverter = config.timelineConverter;
 
     let instance;
 
     function getSegmentsFromList(representation, requestedTime, index, availabilityUpperLimit) {
-        const list = representation.adaptation.period.mpd.manifest.Period_asArray[representation.adaptation.period.index].
+        var list = representation.adaptation.period.mpd.manifest.Period_asArray[representation.adaptation.period.index].
             AdaptationSet_asArray[representation.adaptation.index].Representation_asArray[representation.index].SegmentList;
-        const len = list.SegmentURL_asArray.length;
+        var len = list.SegmentURL_asArray.length;
 
-        const segments = [];
+        var segments = [];
 
-        let periodSegIdx,
+        var periodSegIdx,
             seg,
             s,
             range,

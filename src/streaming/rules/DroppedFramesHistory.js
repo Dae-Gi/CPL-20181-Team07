@@ -1,5 +1,5 @@
 
-import FactoryMaker from '../../core/FactoryMaker';
+import FactoryMaker from '../../core/FactoryMaker.js';
 
 
 function DroppedFramesHistory() {
@@ -15,13 +15,11 @@ function DroppedFramesHistory() {
         let intervalTotalFrames = playbackQuality.totalVideoFrames - lastTotalFrames;
         lastTotalFrames = playbackQuality.totalVideoFrames;
 
-        if (!isNaN(index)) {
-            if (!values[index]) {
-                values[index] = {droppedVideoFrames: intervalDroppedFrames, totalVideoFrames: intervalTotalFrames};
-            } else {
-                values[index].droppedVideoFrames += intervalDroppedFrames;
-                values[index].totalVideoFrames += intervalTotalFrames;
-            }
+        if (!values[index]) {
+            values[index] = {droppedVideoFrames: intervalDroppedFrames, totalVideoFrames: intervalTotalFrames};
+        } else {
+            values[index].droppedVideoFrames += intervalDroppedFrames;
+            values[index].totalVideoFrames += intervalTotalFrames;
         }
     }
 

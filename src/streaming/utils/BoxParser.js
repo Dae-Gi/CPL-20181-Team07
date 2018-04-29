@@ -33,8 +33,6 @@ import IsoFile from './IsoFile';
 import FactoryMaker from '../../core/FactoryMaker';
 import ISOBoxer from 'codem-isoboxer';
 
-import IsoBoxSearchInfo from '../vo/IsoBoxSearchInfo';
-
 function BoxParser(/*config*/) {
 
     let instance;
@@ -52,79 +50,16 @@ function BoxParser(/*config*/) {
             data.fileStart = 0;
         }
 
-        let parsedFile = ISOBoxer.parseBuffer(data);
-        let dashIsoFile = IsoFile(context).create();
+        var parsedFile = ISOBoxer.parseBuffer(data);
+        var dashIsoFile = IsoFile(context).create();
 
         dashIsoFile.setData(parsedFile);
 
         return dashIsoFile;
     }
 
-    /**
-     * From the list of type boxes to look for, returns the latest one that is fully completed (header + payload). This
-     * method only looks into the list of top boxes and doesn't analyze nested boxes.
-     * @param {string[]} types
-     * @param {ArrayBuffer|uint8Array} buffer
-     * @param {number} offset
-     * @returns {IsoBoxSearchInfo}
-     * @memberof BoxParser#
-     */
-    function findLastTopIsoBoxCompleted(types, buffer, offset) {
-        if (offset === undefined) {
-            offset = 0;
-        }
-
-        // 8 = size (uint32) + type (4 characters)
-        if (!buffer || offset + 8 >= buffer.byteLength) {
-            return new IsoBoxSearchInfo(0, false);
-        }
-
-        const data = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer;
-        let boxInfo;
-        let lastCompletedOffset = 0;
-        while (offset < data.byteLength) {
-            const boxSize = parseUint32(data, offset);
-            const boxType = parseIsoBoxType(data, offset + 4);
-
-            if (boxSize === 0) {
-                break;
-            }
-
-            if (offset + boxSize <= data.byteLength) {
-                if (types.indexOf(boxType) >= 0) {
-                    boxInfo = new IsoBoxSearchInfo(offset, true, boxSize);
-                } else {
-                    lastCompletedOffset = offset + boxSize;
-                }
-            }
-
-            offset += boxSize;
-        }
-
-        if (!boxInfo) {
-            return new IsoBoxSearchInfo(lastCompletedOffset, false);
-        }
-
-        return boxInfo;
-    }
-
-    function parseUint32(data, offset) {
-        return data[offset + 3] >>> 0 |
-            (data[offset + 2] << 8) >>> 0 |
-            (data[offset + 1] << 16) >>> 0 |
-            (data[offset] << 24) >>> 0;
-    }
-
-    function parseIsoBoxType(data, offset) {
-        return String.fromCharCode(data[offset++]) +
-            String.fromCharCode(data[offset++]) +
-            String.fromCharCode(data[offset++]) +
-            String.fromCharCode(data[offset]);
-    }
-
     instance = {
-        parse: parse,
-        findLastTopIsoBoxCompleted: findLastTopIsoBoxCompleted
+        parse: parse
     };
 
     return instance;

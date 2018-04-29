@@ -33,19 +33,15 @@ import FactoryMaker from '../../core/FactoryMaker';
 
 function RulesContext(config) {
 
-    config = config || {};
     let instance;
-    const abrController = config.abrController;
-    const streamProcessor = config.streamProcessor;
-    const representationInfo = config.streamProcessor.getCurrentRepresentationInfo();
-    const switchHistory = config.switchHistory;
-    const droppedFramesHistory = config.droppedFramesHistory;
-    const currentRequest = config.currentRequest;
-    const bufferOccupancyABR = config.useBufferOccupancyABR;
-
-    function getMediaType() {
-        return representationInfo.mediaInfo.type;
-    }
+    let representationInfo = config.streamProcessor.getCurrentRepresentationInfo();
+    let sp = config.streamProcessor;
+    let currentValue = config.currentValue;
+    let playbackIndex = config.playbackIndex;
+    let switchHistory = config.switchHistory;
+    let droppedFramesHistory = config.droppedFramesHistory;
+    let currentRequest = config.currentRequest;
+    let richBuffer = config.hasRichBuffer;
 
     function getStreamInfo() {
         return representationInfo.mediaInfo.streamInfo;
@@ -55,16 +51,24 @@ function RulesContext(config) {
         return representationInfo.mediaInfo;
     }
 
-    function getRepresentationInfo() {
+    function getTrackInfo() {
         return representationInfo;
     }
 
-    function getStreamProcessor() {
-        return streamProcessor;
+    function getCurrentValue() {
+        return currentValue;
     }
 
-    function getAbrController() {
-        return abrController;
+    function getManifestInfo() {
+        return representationInfo.mediaInfo.streamInfo.manifestInfo;
+    }
+
+    function getStreamProcessor() {
+        return sp;
+    }
+
+    function getPlaybackIndex() {
+        return playbackIndex;
     }
 
     function getSwitchHistory() {
@@ -79,21 +83,22 @@ function RulesContext(config) {
         return currentRequest;
     }
 
-    function useBufferOccupancyABR() {
-        return bufferOccupancyABR;
+    function hasRichBuffer() {
+        return richBuffer;
     }
 
     instance = {
-        getMediaType: getMediaType,
+        getCurrentValue: getCurrentValue,
+        getManifestInfo: getManifestInfo,
         getMediaInfo: getMediaInfo,
+        getPlaybackIndex: getPlaybackIndex,
         getDroppedFramesHistory: getDroppedFramesHistory,
         getCurrentRequest: getCurrentRequest,
         getSwitchHistory: getSwitchHistory,
         getStreamInfo: getStreamInfo,
         getStreamProcessor: getStreamProcessor,
-        getAbrController: getAbrController,
-        getRepresentationInfo: getRepresentationInfo,
-        useBufferOccupancyABR: useBufferOccupancyABR
+        getTrackInfo: getTrackInfo,
+        hasRichBuffer: hasRichBuffer
     };
 
     return instance;

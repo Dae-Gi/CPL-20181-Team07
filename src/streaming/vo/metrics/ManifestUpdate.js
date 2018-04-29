@@ -93,10 +93,10 @@ class ManifestUpdate {
          */
         this.streamInfo = [];
         /**
-         * Array holding list of RepresentationInfo VO Objects
+         * Array holding list of TrackInfo VO Objects
          * @public
          */
-        this.representationInfo = [];
+        this.trackInfo = [];
 
     }
 }
@@ -135,7 +135,7 @@ class ManifestUpdateStreamInfo {
 /**
  * @classdesc This Object holds reference to the current representation's info when the manifest was updated.
  */
-class ManifestUpdateRepresentationInfo {
+class ManifestUpdateTrackInfo {
     /**
      * @class
      */
@@ -156,7 +156,7 @@ class ManifestUpdateRepresentationInfo {
          */
         this.mediaType = null;
         /**
-         * Which representation
+         * Which reprenset
          * @public
          */
         this.streamIndex = null;
@@ -178,4 +178,4 @@ class ManifestUpdateRepresentationInfo {
     }
 }
 
-export { ManifestUpdate, ManifestUpdateStreamInfo, ManifestUpdateRepresentationInfo };
+export { ManifestUpdate, ManifestUpdateStreamInfo, ManifestUpdateTrackInfo };

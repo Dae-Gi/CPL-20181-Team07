@@ -28,80 +28,71 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import Constants from '../constants/Constants';
 import EventBus from '../../core/EventBus';
 import Events from '../../core/events/Events';
 import FactoryMaker from '../../core/FactoryMaker';
 import InitCache from '../utils/InitCache';
-import SourceBufferSink from '../SourceBufferSink';
-import TextController from '../../streaming/text/TextController';
 
-const BUFFER_CONTROLLER_TYPE = 'NotFragmentedTextBufferController';
 function NotFragmentedTextBufferController(config) {
 
-    config = config || {};
     let context = this.context;
     let eventBus = EventBus(context).getInstance();
-    const textController = TextController(context).getInstance();
 
+    let sourceBufferController = config.sourceBufferController;
     let errHandler = config.errHandler;
-    let type = config.type;
-    let streamProcessor = config.streamProcessor;
 
     let instance,
         isBufferingCompleted,
         initialized,
         mediaSource,
         buffer,
+        type,
+        streamProcessor,
         representationController,
         initCache;
 
     function setup() {
+
         initialized = false;
         mediaSource = null;
+        buffer = null;
+        type = null;
+        streamProcessor = null;
         representationController = null;
         isBufferingCompleted = false;
 
-        eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, instance);
-        eventBus.on(Events.INIT_FRAGMENT_LOADED, onInitFragmentLoaded, instance);
+        eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
+        eventBus.on(Events.INIT_FRAGMENT_LOADED, onInitFragmentLoaded, this);
     }
 
-    function getBufferControllerType() {
-        return BUFFER_CONTROLLER_TYPE;
-    }
-
-    function initialize(source) {
+    function initialize(Type, source, StreamProcessor) {
+        type = Type;
         setMediaSource(source);
+        streamProcessor = StreamProcessor;
         representationController = streamProcessor.getRepresentationController();
         initCache = InitCache(context).getInstance();
     }
 
     /**
      * @param {MediaInfo }mediaInfo
+     * @returns {Object} SourceBuffer object
      * @memberof BufferController#
      */
     function createBuffer(mediaInfo) {
         try {
-            buffer = SourceBufferSink(context).create(mediaSource, mediaInfo);
+            buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
+
             if (!initialized) {
-                const textBuffer = buffer.getBuffer();
-                if (textBuffer.hasOwnProperty(Constants.INITIALIZE)) {
-                    textBuffer.initialize(type, streamProcessor);
+                if (buffer.hasOwnProperty('initialize')) {
+                    buffer.initialize(type, this);
                 }
                 initialized = true;
             }
-
         } catch (e) {
-            if ((mediaInfo.isText) || (mediaInfo.codec.indexOf('codecs="stpp') !== -1) || (mediaInfo.codec.indexOf('codecs="wvtt') !== -1)) {
-                try {
-                    buffer = textController.getTextSourceBuffer();
-                } catch (e) {
-                    errHandler.mediaSourceError('Error creating ' + type + ' source buffer.');
-                }
-            } else {
-                errHandler.mediaSourceError('Error creating ' + type + ' source buffer.');
-            }
+            errHandler.mediaSourceError('Error creating ' + type + ' source buffer.');
         }
+
+        return buffer;
     }
 
     function getType() {
@@ -112,6 +103,10 @@ function NotFragmentedTextBufferController(config) {
         return buffer;
     }
 
+    function setBuffer(value) {
+        buffer = value;
+    }
+
     function setMediaSource(value) {
         mediaSource = value;
     }
@@ -120,36 +115,30 @@ function NotFragmentedTextBufferController(config) {
         return mediaSource;
     }
 
+    function setStreamProcessor(value) {
+        streamProcessor = value;
+    }
+
     function getStreamProcessor() {
         return streamProcessor;
-    }
-
-    function getIsPruningInProgress() {
-        return false;
-    }
-
-    function dischargePreBuffer() {
-    }
-
-    function setSeekStartTime() { //Unused - TODO Remove need for stub function
     }
 
     function getBufferLevel() {
         return 0;
     }
 
-    function getIsBufferingCompleted() {
-        return isBufferingCompleted;
+    function getCriticalBufferLevel() {
+        return 0;
     }
 
     function reset(errored) {
-        eventBus.off(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, instance);
-        eventBus.off(Events.INIT_FRAGMENT_LOADED, onInitFragmentLoaded, instance);
 
-        if (!errored && buffer) {
-            buffer.abort();
-            buffer.reset();
-            buffer = null;
+        eventBus.off(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
+        eventBus.off(Events.INIT_FRAGMENT_LOADED, onInitFragmentLoaded, this);
+
+        if (!errored) {
+            sourceBufferController.abort(mediaSource, buffer);
+            sourceBufferController.removeSourceBuffer(mediaSource, buffer);
         }
     }
 
@@ -168,14 +157,18 @@ function NotFragmentedTextBufferController(config) {
         if (e.fragmentModel !== streamProcessor.getFragmentModel() || (!e.chunk.bytes)) {
             return;
         }
-        initCache.save(e.chunk);
-        buffer.append(e.chunk);
+
+        sourceBufferController.append(buffer, e.chunk);
     }
 
-    function switchInitData(streamId, representationId) {
-        const chunk = initCache.extract(streamId, representationId);
+    function getIsBufferingCompleted() {
+        return isBufferingCompleted;
+    }
+
+    function switchInitData(streamId, quality) {
+        const chunk = initCache.extract(streamId, type, quality);
         if (chunk) {
-            buffer.append(chunk);
+            sourceBufferController.append(chunk);
         } else {
             eventBus.trigger(Events.INIT_REQUESTED, {
                 sender: instance
@@ -183,26 +176,20 @@ function NotFragmentedTextBufferController(config) {
         }
     }
 
-    function getRangeAt() {
-        return null;
-    }
-
     instance = {
-        getBufferControllerType: getBufferControllerType,
         initialize: initialize,
         createBuffer: createBuffer,
         getType: getType,
         getStreamProcessor: getStreamProcessor,
-        setSeekStartTime: setSeekStartTime,
+        setStreamProcessor: setStreamProcessor,
         getBuffer: getBuffer,
+        setBuffer: setBuffer,
         getBufferLevel: getBufferLevel,
+        getCriticalBufferLevel: getCriticalBufferLevel,
         setMediaSource: setMediaSource,
         getMediaSource: getMediaSource,
         getIsBufferingCompleted: getIsBufferingCompleted,
-        getIsPruningInProgress: getIsPruningInProgress,
-        dischargePreBuffer: dischargePreBuffer,
         switchInitData: switchInitData,
-        getRangeAt: getRangeAt,
         reset: reset
     };
 
@@ -211,5 +198,5 @@ function NotFragmentedTextBufferController(config) {
     return instance;
 }
 
-NotFragmentedTextBufferController.__dashjs_factory_name = BUFFER_CONTROLLER_TYPE;
+NotFragmentedTextBufferController.__dashjs_factory_name = 'NotFragmentedTextBufferController';
 export default FactoryMaker.getClassFactory(NotFragmentedTextBufferController);

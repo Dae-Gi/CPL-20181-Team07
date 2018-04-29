@@ -29,6 +29,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+import BASE64 from '../../../externals/base64';
+
 class CommonEncryption {
     /**
      * Find and return the ContentProtection element in the given array
@@ -39,9 +41,9 @@ class CommonEncryption {
      * null if one was not found
      */
     static findCencContentProtection(cpArray) {
-        let retVal = null;
-        for (let i = 0; i < cpArray.length; ++i) {
-            let cp = cpArray[i];
+        var retVal = null;
+        for (var i = 0; i < cpArray.length; ++i) {
+            var cp = cpArray[i];
             if (cp.schemeIdUri.toLowerCase() === 'urn:mpeg:dash:mp4protection:2011' &&
                     cp.value.toLowerCase() === 'cenc')
                 retVal = cp;
@@ -56,11 +58,11 @@ class CommonEncryption {
      * @return {ArrayBuffer} data portion of the PSSH
      */
     static getPSSHData(pssh) {
-        let offset = 8; // Box size and type fields
-        let view = new DataView(pssh);
+        var offset = 8; // Box size and type fields
+        var view = new DataView(pssh);
 
         // Read version
-        let version = view.getUint8(offset);
+        var version = view.getUint8(offset);
 
         offset += 20; // Version (1), flags (3), system ID (16)
 
@@ -83,7 +85,7 @@ class CommonEncryption {
      * or null if a valid association could not be found.
      */
     static getPSSHForKeySystem(keySystem, initData) {
-        let psshList = CommonEncryption.parsePSSHList(initData);
+        var psshList = CommonEncryption.parsePSSHList(initData);
         if (psshList.hasOwnProperty(keySystem.uuid.toLowerCase())) {
             return psshList[keySystem.uuid.toLowerCase()];
         }
@@ -95,10 +97,9 @@ class CommonEncryption {
      * base64-encoding of the init data
      *
      * @param {Object} cpData the ContentProtection element
-     * @param {BASE64} BASE64 reference
      * @returns {ArrayBuffer|null} the init data or null if not found
      */
-    static parseInitDataFromContentProtection(cpData, BASE64) {
+    static parseInitDataFromContentProtection(cpData) {
         if ('pssh' in cpData) {
             return BASE64.decodeArray(cpData.pssh.__text).buffer;
         }
@@ -119,20 +120,20 @@ class CommonEncryption {
         if (data === null)
             return [];
 
-        let dv = new DataView(data.buffer || data); // data.buffer first for Uint8Array support
-        let done = false;
-        let pssh = {};
+        var dv = new DataView(data);
+        var done = false;
+        var pssh = {};
 
         // TODO: Need to check every data read for end of buffer
-        let byteCursor = 0;
+        var byteCursor = 0;
         while (!done) {
 
-            let size,
+            var size,
                 nextBox,
                 version,
                 systemID,
                 psshDataSize;
-            let boxStart = byteCursor;
+            var boxStart = byteCursor;
 
             if (byteCursor >= dv.buffer.byteLength)
                 break;
@@ -161,7 +162,7 @@ class CommonEncryption {
 
             // 16-byte UUID/SystemID
             systemID = '';
-            let i, val;
+            var i, val;
             for (i = 0; i < 4; i++) {
                 val = dv.getUint8(byteCursor + i).toString(16);
                 systemID += (val.length === 1) ? '0' + val : val;

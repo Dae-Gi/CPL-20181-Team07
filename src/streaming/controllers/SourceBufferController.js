@@ -28,29 +28,26 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import DashJSError from '../vo/DashJSError';
+import TextController from '../text/TextController';
+import Error from '../vo/Error';
 import EventBus from '../../core/EventBus';
 import Events from '../../core/events/Events';
 import FactoryMaker from '../../core/FactoryMaker';
 
 const QUOTA_EXCEEDED_ERROR_CODE = 22;
-const APPEND_ERROR_CODE = 1;
-const REMOVE_ERROR_CODE = 2;
-const APPEND_ERROR_MESSAGE = 'buffer or chunk is not defined';
-const REMOVE_ERROR_MESSAGE = 'buffer is not defined';
 
-function SourceBufferController(config) {
+function SourceBufferController() {
 
     let context = this.context;
     let eventBus = EventBus(context).getInstance();
-    let textController = config.textController;
 
-    let instance;
+    let instance,
+        dashManifestModel;
 
     function createSourceBuffer(mediaSource, mediaInfo) {
 
-        let codec = mediaInfo.codec;
-        let buffer = null;
+        var codec = mediaInfo.codec;
+        var buffer = null;
 
         try {
             // Safari claims to support anything starting 'application/mp4'.
@@ -66,6 +63,7 @@ function SourceBufferController(config) {
         } catch (ex) {
             // Note that in the following, the quotes are open to allow for extra text after stpp and wvtt
             if ((mediaInfo.isText) || (codec.indexOf('codecs="stpp') !== -1) || (codec.indexOf('codecs="wvtt') !== -1)) {
+                var textController = TextController(context).getInstance();
                 buffer = textController.getTextSourceBuffer();
             } else {
                 throw ex;
@@ -82,17 +80,17 @@ function SourceBufferController(config) {
     }
 
     function getBufferRange(buffer, time, tolerance) {
-        let ranges = null;
-        let start = 0;
-        let end = 0;
-        let firstStart = null;
-        let lastEnd = null;
-        let gap = 0;
+        var ranges = null;
+        var start = 0;
+        var end = 0;
+        var firstStart = null;
+        var lastEnd = null;
+        var gap = 0;
 
-        let len,
+        var len,
             i;
 
-        let toler = (tolerance || 0.15);
+        var toler = (tolerance || 0.15);
 
         try {
             ranges = buffer.buffered;
@@ -138,7 +136,7 @@ function SourceBufferController(config) {
     }
 
     function getAllRanges(buffer) {
-        let ranges = null;
+        var ranges = null;
 
         try {
             ranges = buffer.buffered;
@@ -149,9 +147,9 @@ function SourceBufferController(config) {
     }
 
     function getTotalBufferedTime(buffer) {
-        let ranges = getAllRanges(buffer);
-        let totalBufferedTime = 0;
-        let ln,
+        var ranges = getAllRanges(buffer);
+        var totalBufferedTime = 0;
+        var ln,
             i;
 
         if (!ranges) return totalBufferedTime;
@@ -165,7 +163,7 @@ function SourceBufferController(config) {
 
     function getBufferLength(buffer, time, tolerance) {
 
-        let range,
+        var range,
             length;
 
         range = getBufferRange(buffer, time, tolerance);
@@ -185,8 +183,8 @@ function SourceBufferController(config) {
         //TODO we may need to look for a more elegant and robust method
         // The logic below checks that is the difference between currentRanges and actual SourceBuffer ranges
 
-        let newRanges = getAllRanges(buffer);
-        let newStart,
+        var newRanges = getAllRanges(buffer);
+        var newStart,
             newEnd,
             equalStart,
             equalEnd,
@@ -198,7 +196,7 @@ function SourceBufferController(config) {
 
         if (!newRanges) return null;
 
-        for (let i = 0, ln = newRanges.length; i < ln; i++) {
+        for (var i = 0, ln = newRanges.length; i < ln; i++) {
             hasRange = currentRanges.length > i;
             currentRange = hasRange ? {
                 start: currentRanges.start(i),
@@ -276,21 +274,12 @@ function SourceBufferController(config) {
     }
 
     function append(buffer, chunk) {
-        if (!buffer || !chunk) {
-            eventBus.trigger(Events.SOURCEBUFFER_APPEND_COMPLETED, {
-                buffer: null,
-                bytes: null,
-                error: new DashJSError(APPEND_ERROR_CODE, APPEND_ERROR_MESSAGE, null)
-            });
-            return;
-        }
-        let bytes = chunk.bytes;
-
-        let appendMethod = ('append' in buffer) ? 'append' : (('appendBuffer' in buffer) ? 'appendBuffer' : null);
+        var bytes = chunk.bytes;
+        var appendMethod = ('append' in buffer) ? 'append' : (('appendBuffer' in buffer) ? 'appendBuffer' : null);
         // our user-defined sourcebuffer-like object has Object as its
         // prototype whereas built-in SourceBuffers will have something
         // more sensible. do not pass chunk to built-in append.
-        let acceptsChunk = Object.prototype.toString.call(buffer).slice(8, -1) === 'Object';
+        var acceptsChunk = Object.prototype.toString.call(buffer).slice(8, -1) === 'Object';
 
         if (!appendMethod) return;
 
@@ -306,35 +295,25 @@ function SourceBufferController(config) {
                 waitForUpdateEnd(buffer, function () {
                     eventBus.trigger(Events.SOURCEBUFFER_APPEND_COMPLETED, {
                         buffer: buffer,
-                        bytes: bytes,
-                        endFragment: chunk.endFragment
+                        bytes: bytes
                     });
                 });
             } catch (err) {
                 eventBus.trigger(Events.SOURCEBUFFER_APPEND_COMPLETED, {
                     buffer: buffer,
                     bytes: bytes,
-                    endFragment: chunk.endFragment,
-                    error: new DashJSError(err.code, err.message, null)
+                    error: new Error(err.code, err.message, null)
                 });
             }
         });
     }
 
-    function remove(buffer, start, end, mediaSource, forceRemoval) {
-        if (!buffer) {
-            eventBus.trigger(Events.SOURCEBUFFER_REMOVE_COMPLETED, {
-                buffer: buffer,
-                from: start,
-                to: end,
-                error: new DashJSError(REMOVE_ERROR_CODE, REMOVE_ERROR_MESSAGE, null)
-            });
-            return;
-        }
+    function remove(buffer, start, end, mediaSource) {
+
         // make sure that the given time range is correct. Otherwise we will get InvalidAccessError
         waitForUpdateEnd(buffer, function () {
             try {
-                if ((start >= 0) && (end > start) && (forceRemoval || mediaSource.readyState !== 'ended')) {
+                if ((start >= 0) && (end > start) && (mediaSource.readyState !== 'ended')) {
                     buffer.remove(start, end);
                 }
                 // updating is in progress, we should wait for it to complete before signaling that this operation is done
@@ -350,7 +329,7 @@ function SourceBufferController(config) {
                     buffer: buffer,
                     from: start,
                     to: end,
-                    error: new DashJSError(err.code, err.message, null)
+                    error: new Error(err.code, err.message, null)
                 });
             }
         });
@@ -360,17 +339,25 @@ function SourceBufferController(config) {
         try {
             if (mediaSource.readyState === 'open') {
                 buffer.abort();
-            } else if (buffer.resetEmbedded && mediaSource.readyState === 'ended') {
+            } else if (buffer.setTextTrack && mediaSource.readyState === 'ended') {
                 buffer.abort(); //The cues need to be removed from the TextSourceBuffer via a call to abort()
             }
         } catch (ex) {}
     }
 
-    function waitForUpdateEnd(buffer, callback) {
-        let intervalId;
-        const CHECK_INTERVAL = 50;
+    function setConfig(config) {
+        if (!config) return;
 
-        const checkIsUpdateEnded = function () {
+        if (config.dashManifestModel) {
+            dashManifestModel = config.dashManifestModel;
+        }
+    }
+
+    function waitForUpdateEnd(buffer, callback) {
+        var intervalId;
+        var CHECK_INTERVAL = 50;
+
+        var checkIsUpdateEnded = function () {
             // if updating is still in progress do nothing and wait for the next check again.
             if (buffer.updating) return;
             // updating is completed, now we can stop checking and resolve the promise
@@ -378,7 +365,7 @@ function SourceBufferController(config) {
             callback();
         };
 
-        const updateEndHandler = function () {
+        var updateEndHandler = function () {
             if (buffer.updating) return;
 
             buffer.removeEventListener('updateend', updateEndHandler, false);
@@ -414,7 +401,8 @@ function SourceBufferController(config) {
         getAllRanges: getAllRanges,
         getTotalBufferedTime: getTotalBufferedTime,
         getBufferLength: getBufferLength,
-        getRangeDifference: getRangeDifference
+        getRangeDifference: getRangeDifference,
+        setConfig: setConfig
     };
 
     return instance;
@@ -423,5 +411,4 @@ function SourceBufferController(config) {
 SourceBufferController.__dashjs_factory_name = 'SourceBufferController';
 let factory = FactoryMaker.getSingletonFactory(SourceBufferController);
 factory.QUOTA_EXCEEDED_ERROR_CODE = QUOTA_EXCEEDED_ERROR_CODE;
-FactoryMaker.updateSingletonFactory(SourceBufferController.__dashjs_factory_name, factory);
 export default factory;

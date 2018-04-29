@@ -36,8 +36,8 @@ function MediaSourceController() {
 
     function createMediaSource() {
 
-        let hasWebKit = ('WebKitMediaSource' in window);
-        let hasMediaSource = ('MediaSource' in window);
+        var hasWebKit = ('WebKitMediaSource' in window);
+        var hasMediaSource = ('MediaSource' in window);
 
         if (hasMediaSource) {
             return new MediaSource();
@@ -50,7 +50,7 @@ function MediaSourceController() {
 
     function attachMediaSource(source, videoModel) {
 
-        let objectURL = window.URL.createObjectURL(source);
+        var objectURL = window.URL.createObjectURL(source);
 
         videoModel.setSource(objectURL);
 
@@ -69,30 +69,17 @@ function MediaSourceController() {
         return source.duration;
     }
 
-    function setSeekable(source, start, end) {
-        if (source && typeof source.setLiveSeekableRange === 'function' && typeof source.clearLiveSeekableRange === 'function' &&
-                source.readyState === 'open' && start >= 0 && start < end) {
-            source.clearLiveSeekableRange();
-            source.setLiveSeekableRange(start, end);
-        }
-    }
-
     function signalEndOfStream(source) {
 
-        let buffers = source.sourceBuffers;
-        const ln = buffers.length;
+        var buffers = source.sourceBuffers;
+        var ln = buffers.length;
+        var i = 0;
 
-        if (source.readyState !== 'open') {
-            return;
-        }
+        if (source.readyState !== 'open') return;
 
-        for (let i = 0; i < ln; i++) {
-            if (buffers[i].updating) {
-                return;
-            }
-            if (buffers[i].buffered.length === 0) {
-                return;
-            }
+        for (i; i < ln; i++) {
+            if (buffers[i].updating) return;
+            if (buffers[i].buffered.length === 0) return;
         }
 
         source.endOfStream();
@@ -103,7 +90,6 @@ function MediaSourceController() {
         attachMediaSource: attachMediaSource,
         detachMediaSource: detachMediaSource,
         setDuration: setDuration,
-        setSeekable: setSeekable,
         signalEndOfStream: signalEndOfStream
     };
 

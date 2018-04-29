@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+import FactoryMaker from '../../../core/FactoryMaker';
 import BufferLevel from './handlers/BufferLevelHandler';
 import DVBErrors from './handlers/DVBErrorsHandler';
 import HttpList from './handlers/HttpListHandler';
@@ -36,7 +37,6 @@ import GenericMetricHandler from './handlers/GenericMetricHandler';
 
 function MetricsHandlerFactory(config) {
 
-    config = config || {};
     let instance;
     let log = config.log;
 
@@ -63,8 +63,7 @@ function MetricsHandlerFactory(config) {
 
         try {
             handler = knownFactoryProducts[matches[1]](context).create({
-                eventBus: config.eventBus,
-                metricsConstants: config.metricsConstants
+                eventBus: config.eventBus
             });
 
             handler.initialize(
@@ -100,4 +99,4 @@ function MetricsHandlerFactory(config) {
 }
 
 MetricsHandlerFactory.__dashjs_factory_name = 'MetricsHandlerFactory';
-export default dashjs.FactoryMaker.getSingletonFactory(MetricsHandlerFactory); /* jshint ignore:line */
+export default FactoryMaker.getSingletonFactory(MetricsHandlerFactory);

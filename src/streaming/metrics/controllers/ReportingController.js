@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+import FactoryMaker from '../../../core/FactoryMaker';
 import ReportingFactory from '../reporting/ReportingFactory';
 
 function ReportingController(config) {
@@ -36,7 +37,9 @@ function ReportingController(config) {
     let reporters = [];
     let instance;
 
-    const reportingFactory = ReportingFactory(this.context).getInstance(config);
+    let reportingFactory = ReportingFactory(this.context).getInstance({
+        log: config.log
+    });
 
     function initialize(reporting, rangeController) {
         // "if multiple Reporting elements are present, it is expected that
@@ -44,7 +47,7 @@ function ReportingController(config) {
         // to ignore this, and support multiple Reporting per Metric,
         // simply change the 'some' below to 'forEach'
         reporting.some(r => {
-            let reporter = reportingFactory.create(r, rangeController);
+            var reporter = reportingFactory.create(r, rangeController);
 
             if (reporter) {
                 reporters.push(reporter);
@@ -72,4 +75,4 @@ function ReportingController(config) {
 }
 
 ReportingController.__dashjs_factory_name = 'ReportingController';
-export default dashjs.FactoryMaker.getClassFactory(ReportingController); /* jshint ignore:line */
+export default FactoryMaker.getClassFactory(ReportingController);

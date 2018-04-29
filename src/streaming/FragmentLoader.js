@@ -28,9 +28,9 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import HTTPLoader from './net/HTTPLoader';
+import XHRLoader from './XHRLoader';
 import HeadRequest from './vo/HeadRequest';
-import DashJSError from './vo/DashJSError';
+import Error from './vo/Error';
 import EventBus from './../core/EventBus';
 import Events from './../core/events/Events';
 import FactoryMaker from '../core/FactoryMaker';
@@ -41,20 +41,17 @@ const FRAGMENT_LOADER_MESSAGE_NULL_REQUEST = 'request is null';
 
 function FragmentLoader(config) {
 
-    config = config || {};
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
 
     let instance,
-        httpLoader;
+        xhrLoader;
 
     function setup() {
-        httpLoader = HTTPLoader(context).create({
+        xhrLoader = XHRLoader(context).create({
             errHandler: config.errHandler,
             metricsModel: config.metricsModel,
-            mediaPlayerModel: config.mediaPlayerModel,
-            requestModifier: config.requestModifier,
-            useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
+            requestModifier: config.requestModifier
         });
     }
 
@@ -71,7 +68,7 @@ function FragmentLoader(config) {
         if (request) {
             let headRequest = new HeadRequest(request.url);
 
-            httpLoader.load({
+            xhrLoader.load({
                 request: headRequest,
                 success: function () {
                     report(true);
@@ -96,44 +93,31 @@ function FragmentLoader(config) {
         };
 
         if (request) {
-            httpLoader.load({
+            xhrLoader.load({
                 request: request,
-                progress: function (data) {
+                progress: function () {
                     eventBus.trigger(Events.LOADING_PROGRESS, {
                         request: request
                     });
-                    if (data) {
-                        eventBus.trigger(Events.LOADING_DATA_PROGRESS, {
-                            request: request,
-                            response: data || null,
-                            error: null,
-                            sender: instance
-                        });
-                    }
                 },
                 success: function (data) {
                     report(data);
                 },
-                error: function (request, statusText, errorText) {
+                error: function (xhr, statusText, errorText) {
                     report(
                         undefined,
-                        new DashJSError(
+                        new Error(
                             FRAGMENT_LOADER_ERROR_LOADING_FAILURE,
                             errorText,
                             statusText
                         )
                     );
-                },
-                abort: function (request) {
-                    if (request) {
-                        eventBus.trigger(Events.LOADING_ABANDONED, {request: request, mediaType: request.mediaType, sender: instance});
-                    }
                 }
             });
         } else {
             report(
                 undefined,
-                new DashJSError(
+                new Error(
                     FRAGMENT_LOADER_ERROR_NULL_REQUEST,
                     FRAGMENT_LOADER_MESSAGE_NULL_REQUEST
                 )
@@ -142,15 +126,15 @@ function FragmentLoader(config) {
     }
 
     function abort() {
-        if (httpLoader) {
-            httpLoader.abort();
+        if (xhrLoader) {
+            xhrLoader.abort();
         }
     }
 
     function reset() {
-        if (httpLoader) {
-            httpLoader.abort();
-            httpLoader = null;
+        if (xhrLoader) {
+            xhrLoader.abort();
+            xhrLoader = null;
         }
     }
 
@@ -171,5 +155,4 @@ FragmentLoader.__dashjs_factory_name = 'FragmentLoader';
 const factory = FactoryMaker.getClassFactory(FragmentLoader);
 factory.FRAGMENT_LOADER_ERROR_LOADING_FAILURE = FRAGMENT_LOADER_ERROR_LOADING_FAILURE;
 factory.FRAGMENT_LOADER_ERROR_NULL_REQUEST = FRAGMENT_LOADER_ERROR_NULL_REQUEST;
-FactoryMaker.updateClassFactory(FragmentLoader.__dashjs_factory_name, factory);
 export default factory;

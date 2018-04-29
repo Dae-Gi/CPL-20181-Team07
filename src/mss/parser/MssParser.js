@@ -29,48 +29,39 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @module MssParser
- * @param {Object} config object
- */
-function MssParser(config) {
-    config = config || {};
-    const BASE64 = config.BASE64;
-    const log = config.log;
-    const errorHandler = config.errHandler;
-    const constants = config.constants;
+import FactoryMaker from '../../core/FactoryMaker';
+import Debug from '../../core/Debug';
+import ErrorHandler from '../../streaming/utils/ErrorHandler';
+import BASE64 from '../../../externals/base64';
 
-    const DEFAULT_TIME_SCALE = 10000000.0;
+function MssParser(config) {
+
+    const context = this.context;
+    const log = Debug(context).getInstance().log;
+    const errorHandler = ErrorHandler(context).getInstance();
+
+    const TIME_SCALE_100_NANOSECOND_UNIT = 10000000.0;
     const SUPPORTED_CODECS = ['AAC', 'AACL', 'AVC1', 'H264', 'TTML', 'DFXP'];
-    // MPEG-DASH Role and accessibility mapping according to ETSI TS 103 285 v1.1.1 (section 7.1.2)
-    const ROLE = {
-        'SUBT': 'alternate',
-        'CAPT': 'alternate', // 'CAPT' is commonly equivalent to 'SUBT'
-        'DESC': 'main'
-    };
-    const ACCESSIBILITY = {
-        'DESC': '2'
-    };
     const samplingFrequencyIndex = {
-        96000: 0x0,
-        88200: 0x1,
-        64000: 0x2,
-        48000: 0x3,
-        44100: 0x4,
-        32000: 0x5,
-        24000: 0x6,
-        22050: 0x7,
-        16000: 0x8,
-        12000: 0x9,
-        11025: 0xA,
-        8000: 0xB,
-        7350: 0xC
-    };
+            96000: 0x0,
+            88200: 0x1,
+            64000: 0x2,
+            48000: 0x3,
+            44100: 0x4,
+            32000: 0x5,
+            24000: 0x6,
+            22050: 0x7,
+            16000: 0x8,
+            12000: 0x9,
+            11025: 0xA,
+            8000: 0xB,
+            7350: 0xC
+        };
     const mimeTypeMap = {
-        'video': 'video/mp4',
-        'audio': 'audio/mp4',
-        'text': 'application/mp4'
-    };
+            'video': 'video/mp4',
+            'audio': 'audio/mp4',
+            'text': 'application/mp4'
+        };
 
     let instance,
         mediaPlayerModel;
@@ -80,16 +71,18 @@ function MssParser(config) {
         mediaPlayerModel = config.mediaPlayerModel;
     }
 
-    function mapPeriod(smoothStreamingMedia, timescale) {
+    function mapPeriod(smoothStreamingMedia) {
         let period = {};
         let streams,
             adaptation;
+
+        period.duration = (parseFloat(smoothStreamingMedia.getAttribute('Duration')) === 0) ? Infinity : parseFloat(smoothStreamingMedia.getAttribute('Duration')) / TIME_SCALE_100_NANOSECOND_UNIT;
 
         // For each StreamIndex node, create an AdaptationSet element
         period.AdaptationSet_asArray = [];
         streams = smoothStreamingMedia.getElementsByTagName('StreamIndex');
         for (let i = 0; i < streams.length; i++) {
-            adaptation = mapAdaptationSet(streams[i], timescale);
+            adaptation = mapAdaptationSet(streams[i]);
             if (adaptation !== null) {
                 period.AdaptationSet_asArray.push(adaptation);
             }
@@ -102,7 +95,7 @@ function MssParser(config) {
         return period;
     }
 
-    function mapAdaptationSet(streamIndex, timescale) {
+    function mapAdaptationSet(streamIndex) {
 
         let adaptationSet = {};
         let representations = [];
@@ -110,9 +103,10 @@ function MssParser(config) {
         let qualityLevels,
             representation,
             segments,
+            range,
             i;
 
-        adaptationSet.id = streamIndex.getAttribute('Name') ? streamIndex.getAttribute('Name') : streamIndex.getAttribute('Type');
+        adaptationSet.id = streamIndex.getAttribute('Name');
         adaptationSet.contentType = streamIndex.getAttribute('Type');
         adaptationSet.lang = streamIndex.getAttribute('Language') || 'und';
         adaptationSet.mimeType = mimeTypeMap[adaptationSet.contentType];
@@ -120,28 +114,8 @@ function MssParser(config) {
         adaptationSet.maxWidth = streamIndex.getAttribute('MaxWidth');
         adaptationSet.maxHeight = streamIndex.getAttribute('MaxHeight');
 
-        // Map subTypes to MPEG-DASH AdaptationSet role and accessibility (see ETSI TS 103 285 v1.1.1, section 7.1.2)
-        if (adaptationSet.subType) {
-            if (ROLE[adaptationSet.subType]) {
-                let role = {
-                    schemeIdUri: 'urn:mpeg:dash:role:2011',
-                    value: ROLE[adaptationSet.subType]
-                };
-                adaptationSet.Role = role;
-                adaptationSet.Role_asArray = [role];
-            }
-            if (ACCESSIBILITY[adaptationSet.subType]) {
-                let accessibility = {
-                    schemeIdUri: 'urn:tva:metadata:cs:AudioPurposeCS:2007',
-                    value: ACCESSIBILITY[adaptationSet.subType]
-                };
-                adaptationSet.Accessibility = accessibility;
-                adaptationSet.Accessibility_asArray = [accessibility];
-            }
-        }
-
         // Create a SegmentTemplate with a SegmentTimeline
-        segmentTemplate = mapSegmentTemplate(streamIndex, timescale);
+        segmentTemplate = mapSegmentTemplate(streamIndex);
 
         qualityLevels = streamIndex.getElementsByTagName('QualityLevel');
         // For each QualityLevel node, create a Representation element
@@ -176,6 +150,11 @@ function MssParser(config) {
 
         segments = segmentTemplate.SegmentTimeline.S_asArray;
 
+        range = {
+            start: segments[0].t / segmentTemplate.timescale,
+            end: (segments[segments.length - 1].t + segments[segments.length - 1].d) / segmentTemplate.timescale
+        };
+
         return adaptationSet;
     }
 
@@ -183,7 +162,6 @@ function MssParser(config) {
 
         let representation = {};
         let fourCCValue = null;
-        let type = streamIndex.getAttribute('Type');
 
         representation.id = qualityLevel.Id;
         representation.bandwidth = parseInt(qualityLevel.getAttribute('Bitrate'), 10);
@@ -194,25 +172,20 @@ function MssParser(config) {
         fourCCValue = qualityLevel.getAttribute('FourCC');
 
         // If FourCC not defined at QualityLevel level, then get it from StreamIndex level
-        if (fourCCValue === null || fourCCValue === '') {
+        if (fourCCValue === null) {
             fourCCValue = streamIndex.getAttribute('FourCC');
         }
 
         // If still not defined (optionnal for audio stream, see https://msdn.microsoft.com/en-us/library/ff728116%28v=vs.95%29.aspx),
         // then we consider the stream is an audio AAC stream
-        if (fourCCValue === null || fourCCValue === '') {
-            if (type === 'audio') {
-                fourCCValue = 'AAC';
-            } else if (type === 'video') {
-                log('[MssParser] FourCC is not defined whereas it is required for a QualityLevel element for a StreamIndex of type "video"');
-                return null;
-            }
+        if (fourCCValue === null) {
+            fourCCValue = 'AAC';
         }
 
         // Check if codec is supported
         if (SUPPORTED_CODECS.indexOf(fourCCValue.toUpperCase()) === -1) {
             // Do not send warning
-            //this.errHandler.sendWarning(MediaPlayer.dependencies.ErrorHandler.prototype.MEDIA_ERR_CODEC_UNSUPPORTED, 'Codec not supported', {codec: fourCCValue});
+            //this.errHandler.sendWarning(MediaPlayer.dependencies.ErrorHandler.prototype.MEDIA_ERR_CODEC_UNSUPPORTED, "Codec not supported", {codec: fourCCValue});
             log('[MssParser] Codec not supported: ' + fourCCValue);
             return null;
         }
@@ -225,7 +198,7 @@ function MssParser(config) {
             representation.audioSamplingRate = parseInt(qualityLevel.getAttribute('SamplingRate'), 10);
             representation.audioChannels = parseInt(qualityLevel.getAttribute('Channels'), 10);
         } else if (fourCCValue.indexOf('TTML') || fourCCValue.indexOf('DFXP')) {
-            representation.codecs = constants.STPP;
+            representation.codecs = 'stpp';
         }
 
         representation.codecPrivateData = '' + qualityLevel.getAttribute('CodecPrivateData');
@@ -312,103 +285,60 @@ function MssParser(config) {
         return 'mp4a.40.' + objectType;
     }
 
-    function mapSegmentTemplate(streamIndex, timescale) {
+    function mapSegmentTemplate(streamIndex) {
 
         let segmentTemplate = {};
-        let mediaUrl,
-            streamIndexTimeScale;
+        let mediaUrl;
 
         mediaUrl = streamIndex.getAttribute('Url').replace('{bitrate}', '$Bandwidth$');
         mediaUrl = mediaUrl.replace('{start time}', '$Time$');
 
-        streamIndexTimeScale = streamIndex.getAttribute('TimeScale');
-        streamIndexTimeScale = streamIndexTimeScale ? parseFloat(streamIndexTimeScale) : timescale;
-
         segmentTemplate.media = mediaUrl;
-        segmentTemplate.timescale = streamIndexTimeScale;
+        segmentTemplate.timescale = TIME_SCALE_100_NANOSECOND_UNIT;
 
-        segmentTemplate.SegmentTimeline = mapSegmentTimeline(streamIndex, segmentTemplate.timescale);
+        segmentTemplate.SegmentTimeline = mapSegmentTimeline(streamIndex);
 
         return segmentTemplate;
     }
 
-    function mapSegmentTimeline(streamIndex, timescale) {
+    function mapSegmentTimeline(streamIndex) {
 
         let segmentTimeline = {};
         let chunks = streamIndex.getElementsByTagName('c');
         let segments = [];
-        let segment;
-        let prevSegment;
-        let tManifest;
-        let i,j,r;
-        let duration = 0;
+        let i,
+            t, d;
 
         for (i = 0; i < chunks.length; i++) {
-            segment = {};
+            // Get time and duration attributes
+            t = parseFloat(chunks[i].getAttribute('t'));
+            d = parseFloat(chunks[i].getAttribute('d'));
 
-            // Get time 't' attribute value
-            tManifest = chunks[i].getAttribute('t');
-
-            // => segment.tManifest = original timestamp value as a string (for constructing the fragment request url, see DashHandler)
-            // => segment.t = number value of timestamp (maybe rounded value, but only for 0.1 microsecond)
-            segment.tManifest = parseFloat(tManifest);
-            segment.t = parseFloat(tManifest);
-
-            // Get duration 'd' attribute value
-            segment.d = parseFloat(chunks[i].getAttribute('d'));
-
-            // If 't' not defined for first segment then t=0
-            if ((i === 0) && !segment.t) {
-                segment.t = 0;
+            if ((i === 0) && !t) {
+                t = 0;
             }
 
             if (i > 0) {
-                prevSegment = segments[segments.length - 1];
                 // Update previous segment duration if not defined
-                if (!prevSegment.d) {
-                    if (prevSegment.tManifest) {
-                        prevSegment.d = parseFloat(tManifest) - parseFloat(prevSegment.tManifest);
-                    } else {
-                        prevSegment.d = segment.t - prevSegment.t;
-                    }
+                if (!segments[segments.length - 1].d) {
+                    segments[segments.length - 1].d = t - segments[segments.length - 1].t;
                 }
-                // Set segment absolute timestamp if not set in manifest
-                if (!segment.t) {
-                    if (prevSegment.tManifest) {
-                        segment.tManifest = parseFloat(prevSegment.tManifest) + prevSegment.d;
-                        segment.t = parseFloat(segment.tManifest);
-                    } else {
-                        segment.t = prevSegment.t + prevSegment.d;
-                    }
+                // Set segment absolute timestamp if not set
+                if (!t) {
+                    t = segments[segments.length - 1].t + segments[segments.length - 1].d;
                 }
             }
-
-            duration += segment.d;
 
             // Create new segment
-            segments.push(segment);
+            segments.push({
+                d: d,
+                t: t
+            });
 
-            // Support for 'r' attribute (i.e. "repeat" as in MPEG-DASH)
-            r = parseFloat(chunks[i].getAttribute('r'));
-            if (r) {
-
-                for (j = 0; j < (r - 1); j++) {
-                    prevSegment = segments[segments.length - 1];
-                    segment = {};
-                    segment.t = prevSegment.t + prevSegment.d;
-                    segment.d = prevSegment.d;
-                    if (prevSegment.tManifest) {
-                        segment.tManifest  = parseFloat(prevSegment.tManifest) + prevSegment.d;
-                    }
-                    duration += segment.d;
-                    segments.push(segment);
-                }
-            }
         }
 
         segmentTimeline.S = segments;
         segmentTimeline.S_asArray = segments;
-        segmentTimeline.duration = duration / timescale;
 
         return segmentTimeline;
     }
@@ -500,64 +430,21 @@ function MssParser(config) {
 
 
     function createPRContentProtection(protectionHeader) {
-        let pro = {
+
+        let contentProtection = {};
+        let pro;
+
+        pro = {
             __text: protectionHeader.firstChild.data,
             __prefix: 'mspr'
         };
-        return {
-            schemeIdUri: 'urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95',
-            value: 'com.microsoft.playready',
-            pro: pro,
-            pro_asArray: pro
-        };
-    }
 
-    function createWidevineContentProtection(protectionHeader, KID) {
-        // Create Widevine CENC header (Protocol Buffer) with KID value
-        let wvCencHeader = new Uint8Array(2 + KID.length);
-        wvCencHeader[0] = 0x12;
-        wvCencHeader[1] = 0x10;
-        wvCencHeader.set(KID, 2);
+        contentProtection.schemeIdUri = 'urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95';
+        contentProtection.value = 'com.microsoft.playready';
+        contentProtection.pro = pro;
+        contentProtection.pro_asArray = pro;
 
-        // Create a pssh box
-        let length = 12 /* box length, type, version and flags */ + 16 /* SystemID */ + 4 /* data length */ + wvCencHeader.length;
-        let pssh = new Uint8Array(length);
-        let i = 0;
-
-        // Set box length value
-        pssh[i++] = (length & 0xFF000000) >> 24;
-        pssh[i++] = (length & 0x00FF0000) >> 16;
-        pssh[i++] = (length & 0x0000FF00) >> 8;
-        pssh[i++] = (length & 0x000000FF);
-
-        // Set type ('pssh'), version (0) and flags (0)
-        pssh.set([0x70, 0x73, 0x73, 0x68, 0x00, 0x00, 0x00, 0x00], i);
-        i += 8;
-
-        // Set SystemID ('edef8ba9-79d6-4ace-a3c8-27dcd51d21ed')
-        pssh.set([0xed, 0xef, 0x8b, 0xa9,  0x79, 0xd6, 0x4a, 0xce, 0xa3, 0xc8, 0x27, 0xdc, 0xd5, 0x1d, 0x21, 0xed], i);
-        i += 16;
-
-        // Set data length value
-        pssh[i++] = (wvCencHeader.length & 0xFF000000) >> 24;
-        pssh[i++] = (wvCencHeader.length & 0x00FF0000) >> 16;
-        pssh[i++] = (wvCencHeader.length & 0x0000FF00) >> 8;
-        pssh[i++] = (wvCencHeader.length & 0x000000FF);
-
-        // Copy Widevine CENC header
-        pssh.set(wvCencHeader, i);
-
-        // Convert to BASE64 string
-        pssh = String.fromCharCode.apply(null, pssh);
-        pssh = BASE64.encodeASCII(pssh);
-
-        return {
-            schemeIdUri: 'urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed',
-            value: 'com.widevine.alpha',
-            pssh: {
-                __text: pssh
-            }
-        };
+        return contentProtection;
     }
 
     function processManifest(xmlDoc, manifestLoadedTime) {
@@ -570,33 +457,27 @@ function MssParser(config) {
             adaptations,
             contentProtection,
             KID,
-            timestampOffset,
-            startTime,
-            segments,
-            timescale,
-            i, j;
+            realDuration,
+            firstSegment,
+            lastSegment,
+            adaptationTimeOffset,
+            i;
 
         // Set manifest node properties
         manifest.protocol = 'MSS';
         manifest.profiles = 'urn:mpeg:dash:profile:isoff-live:2011';
         manifest.type = smoothStreamingMedia.getAttribute('IsLive') === 'TRUE' ? 'dynamic' : 'static';
-        timescale =  smoothStreamingMedia.getAttribute('TimeScale');
-        manifest.timescale = timescale ? parseFloat(timescale) : DEFAULT_TIME_SCALE;
-        manifest.timeShiftBufferDepth = parseFloat(smoothStreamingMedia.getAttribute('DVRWindowLength')) / manifest.timescale;
-        manifest.mediaPresentationDuration = (parseFloat(smoothStreamingMedia.getAttribute('Duration')) === 0) ? Infinity : parseFloat(smoothStreamingMedia.getAttribute('Duration')) / manifest.timescale;
+        manifest.timeShiftBufferDepth = parseFloat(smoothStreamingMedia.getAttribute('DVRWindowLength')) / TIME_SCALE_100_NANOSECOND_UNIT;
+        manifest.mediaPresentationDuration = (parseFloat(smoothStreamingMedia.getAttribute('Duration')) === 0) ? Infinity : parseFloat(smoothStreamingMedia.getAttribute('Duration')) / TIME_SCALE_100_NANOSECOND_UNIT;
         manifest.minBufferTime = mediaPlayerModel.getStableBufferTime();
-        manifest.ttmlTimeIsRelative = true;
 
         // In case of live streams, set availabilityStartTime property according to DVRWindowLength
         if (manifest.type === 'dynamic') {
             manifest.availabilityStartTime = new Date(manifestLoadedTime.getTime() - (manifest.timeShiftBufferDepth * 1000));
-            manifest.refreshManifestOnSwitchTrack = true;
-            manifest.doNotUpdateDVRWindowOnBufferUpdated = true; // done by Mss fragment processor
-            manifest.ignorePostponeTimePeriod = true; // in Mss, manifest is never updated
         }
 
         // Map period node to manifest root node
-        manifest.Period = mapPeriod(smoothStreamingMedia, manifest.timescale);
+        manifest.Period = mapPeriod(smoothStreamingMedia);
         manifest.Period_asArray = [manifest.Period];
 
         // Initialize period start time
@@ -619,82 +500,42 @@ function MssParser(config) {
             contentProtection['cenc:default_KID'] = KID;
             contentProtections.push(contentProtection);
 
-            // Create ContentProtection for Widevine (as a CENC protection)
-            contentProtection = createWidevineContentProtection(protectionHeader, KID);
-            contentProtection['cenc:default_KID'] = KID;
-            contentProtections.push(contentProtection);
-
             manifest.ContentProtection = contentProtections;
             manifest.ContentProtection_asArray = contentProtections;
         }
 
         adaptations = period.AdaptationSet_asArray;
-
         for (i = 0; i < adaptations.length; i += 1) {
-            adaptations[i].SegmentTemplate.initialization = '$Bandwidth$';
+            // In case of VOD streams, check if start time is greater than 0.
+            // Therefore, set period start time to the higher adaptation start time
+            if (manifest.type === 'static' && adaptations[i].contentType !== 'text') {
+                firstSegment = adaptations[i].SegmentTemplate.SegmentTimeline.S_asArray[0];
+                lastSegment = adaptations[i].SegmentTemplate.SegmentTimeline.S_asArray[adaptations[i].SegmentTemplate.SegmentTimeline.S_asArray.length - 1];
+                adaptations[i].SegmentTemplate.initialization = '$Bandwidth$';
+                adaptationTimeOffset = parseFloat(firstSegment.t) / TIME_SCALE_100_NANOSECOND_UNIT;
+                period.start = (period.start === 0) ? adaptationTimeOffset : Math.max(period.start, adaptationTimeOffset);
+                //get last segment start time, add the duration of this last segment
+                realDuration = parseFloat(((lastSegment.t + lastSegment.d) / TIME_SCALE_100_NANOSECOND_UNIT).toFixed(3));
+                //detect difference between announced duration (in MSS manifest) and real duration => in any case, we want that the video element sends the ended event.
+                //set the smallest value between all the adaptations
+                if (!isNaN(realDuration) && realDuration < manifest.mediaPresentationDuration) {
+                    manifest.mediaPresentationDuration = realDuration;
+                    period.duration = realDuration;
+                }
+            } else {
+                adaptations[i].SegmentTemplate.initialization = '$Bandwidth$';
+            }
+
             // Propagate content protection information into each adaptation
             if (manifest.ContentProtection !== undefined) {
                 adaptations[i].ContentProtection = manifest.ContentProtection;
                 adaptations[i].ContentProtection_asArray = manifest.ContentProtection_asArray;
             }
-
-            if (manifest.type === 'dynamic') {
-                // Match timeShiftBufferDepth to video segment timeline duration
-                if (manifest.timeShiftBufferDepth > 0 &&
-                    adaptations[i].contentType === 'video' &&
-                    manifest.timeShiftBufferDepth > adaptations[i].SegmentTemplate.SegmentTimeline.duration) {
-                    manifest.timeShiftBufferDepth = adaptations[i].SegmentTemplate.SegmentTimeline.duration;
-                }
-            }
-        }
-
-        if (manifest.timeShiftBufferDepth < manifest.minBufferTime) {
-            manifest.minBufferTime = manifest.timeShiftBufferDepth;
         }
 
         // Delete Content Protection under root manifest node
         delete manifest.ContentProtection;
         delete manifest.ContentProtection_asArray;
-
-        // In case of VOD streams, check if start time is greater than 0
-        // Then determine timestamp offset according to higher audio/video start time
-        // (use case = live stream delinearization)
-        if (manifest.type === 'static') {
-            for (i = 0; i < adaptations.length; i++) {
-                if (adaptations[i].contentType === 'audio' || adaptations[i].contentType === 'video') {
-                    segments = adaptations[i].SegmentTemplate.SegmentTimeline.S_asArray;
-                    startTime = segments[0].t / adaptations[i].SegmentTemplate.timescale;
-                    if (timestampOffset === undefined) {
-                        timestampOffset = startTime;
-                    }
-                    timestampOffset = Math.min(timestampOffset, startTime);
-                    // Correct content duration according to minimum adaptation's segments duration
-                    // in order to force <video> element sending 'ended' event
-                    manifest.mediaPresentationDuration = Math.min(manifest.mediaPresentationDuration, adaptations[i].SegmentTemplate.SegmentTimeline.duration);
-                }
-            }
-
-            // Patch segment templates timestamps and determine period start time (since audio/video should not be aligned to 0)
-            if (timestampOffset > 0) {
-                for (i = 0; i < adaptations.length; i++) {
-                    segments = adaptations[i].SegmentTemplate.SegmentTimeline.S_asArray;
-                    for (j = 0; j < segments.length; j++) {
-                        if (!segments[j].tManifest) {
-                            segments[j].tManifest = segments[j].t;
-                        }
-                        segments[j].t -= (timestampOffset * adaptations[i].SegmentTemplate.timescale);
-                    }
-                    if (adaptations[i].contentType === 'audio' || adaptations[i].contentType === 'video') {
-                        period.start = Math.max(segments[0].t, period.start);
-                        adaptations[i].SegmentTemplate.presentationTimeOffset = period.start;
-                    }
-                }
-                period.start /= manifest.timescale;
-            }
-        }
-
-        manifest.mediaPresentationDuration = Math.floor(manifest.mediaPresentationDuration * 1000) / 1000;
-        period.duration = manifest.mediaPresentationDuration;
 
         return manifest;
     }
@@ -720,13 +561,6 @@ function MssParser(config) {
         return xmlDoc;
     }
 
-    function getMatchers() {
-        return null;
-    }
-
-    function getIron() {
-        return null;
-    }
 
     function internalParse(data) {
         let xmlDoc = null;
@@ -754,9 +588,7 @@ function MssParser(config) {
     }
 
     instance = {
-        parse: internalParse,
-        getMatchers: getMatchers,
-        getIron: getIron
+        parse: internalParse
     };
 
     setup();
@@ -765,4 +597,4 @@ function MssParser(config) {
 }
 
 MssParser.__dashjs_factory_name = 'MssParser';
-export default dashjs.FactoryMaker.getClassFactory(MssParser); /* jshint ignore:line */
+export default FactoryMaker.getClassFactory(MssParser);

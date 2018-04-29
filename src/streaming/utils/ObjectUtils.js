@@ -30,7 +30,6 @@
  */
 
 import FactoryMaker from '../../core/FactoryMaker';
-import deepEqual from 'fast-deep-equal';
 
 /**
  * @module ObjectUtils
@@ -41,19 +40,20 @@ function ObjectUtils() {
     let instance;
 
     /**
-     * Returns true if objects are equal
+     * Returns true if objects resolve to the same string. Only really useful
+     * when the user controls the object generation
      * @return {boolean}
      * @param {object} obj1
      * @param {object} obj2
      * @memberof module:ObjectUtils
      * @instance
      */
-    function areEqual(obj1, obj2) {
-        return deepEqual(obj1, obj2);
+    function areSimpleEquivalent(obj1, obj2) {
+        return JSON.stringify(obj1) === JSON.stringify(obj2);
     }
 
     instance = {
-        areEqual: areEqual
+        areSimpleEquivalent: areSimpleEquivalent
     };
 
     return instance;

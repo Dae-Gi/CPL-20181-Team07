@@ -32,13 +32,12 @@ import FactoryMaker from '../../../core/FactoryMaker';
 
 function DVBSelector(config) {
 
-    config = config || {};
     let instance;
 
     const blacklistController = config.blacklistController;
 
     function getNonBlacklistedBaseUrls(urls) {
-        let removedPriorities = [];
+        var removedPriorities = [];
 
         const samePrioritiesFilter = function (el) {
             if (removedPriorities.length) {
@@ -74,7 +73,7 @@ function DVBSelector(config) {
 
     function selectByWeight(availableUrls) {
         const prioritySorter = function (a, b) {
-            let diff = a.dvb_priority - b.dvb_priority;
+            var diff = a.dvb_priority - b.dvb_priority;
             return isNaN(diff) ? 0 : diff;
         };
 
@@ -85,11 +84,11 @@ function DVBSelector(config) {
             );
         };
 
-        let totalWeight = 0;
-        let cumulWeights = [];
-        let idx = 0;
-        let rn,
-            urls;
+        var totalWeight = 0;
+        var cumulWeights = [];
+        var idx = 0;
+        var rn;
+        var urls;
 
         // It shall begin by taking the set of resolved BaseURLs present or inherited at the current
         // position in the MPD, resolved and filtered as described in 10.8.2.1, that have the lowest

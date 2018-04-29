@@ -28,8 +28,8 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import DashJSError from './vo/DashJSError';
-import HTTPLoader from './net/HTTPLoader';
+import Error from './vo/Error';
+import XHRLoader from './XHRLoader';
 import {HTTPRequest} from './vo/metrics/HTTPRequest';
 import TextRequest from './vo/TextRequest';
 import EventBus from '../core/EventBus';
@@ -40,16 +40,14 @@ const XLINK_LOADER_ERROR_LOADING_FAILURE = 1;
 
 function XlinkLoader(config) {
 
-    config = config || {};
     const RESOLVE_TO_ZERO = 'urn:mpeg:dash:resolve-to-zero:2013';
 
     const context  = this.context;
     const eventBus = EventBus(context).getInstance();
 
-    let httpLoader = HTTPLoader(context).create({
+    let xhrLoader = XHRLoader(context).create({
         errHandler: config.errHandler,
         metricsModel: config.metricsModel,
-        mediaPlayerModel: config.mediaPlayerModel,
         requestModifier: config.requestModifier
     });
 
@@ -65,7 +63,7 @@ function XlinkLoader(config) {
                 resolveObject: resolveObject,
                 error: content || resolveToZero ?
                     null :
-                    new DashJSError(
+                    new Error(
                         XLINK_LOADER_ERROR_LOADING_FAILURE,
                         'Failed loading Xlink element: ' + url
                     )
@@ -77,7 +75,7 @@ function XlinkLoader(config) {
         } else {
             const request = new TextRequest(url, HTTPRequest.XLINK_TYPE);
 
-            httpLoader.load({
+            xhrLoader.load({
                 request: request,
                 success: function (data) {
                     report(data);
@@ -90,9 +88,9 @@ function XlinkLoader(config) {
     }
 
     function reset() {
-        if (httpLoader) {
-            httpLoader.abort();
-            httpLoader = null;
+        if (xhrLoader) {
+            xhrLoader.abort();
+            xhrLoader = null;
         }
     }
 
@@ -108,5 +106,4 @@ XlinkLoader.__dashjs_factory_name = 'XlinkLoader';
 
 const factory = FactoryMaker.getClassFactory(XlinkLoader);
 factory.XLINK_LOADER_ERROR_LOADING_FAILURE = XLINK_LOADER_ERROR_LOADING_FAILURE;
-FactoryMaker.updateClassFactory(XlinkLoader.__dashjs_factory_name, factory);
 export default factory;

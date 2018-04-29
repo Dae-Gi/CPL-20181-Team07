@@ -63,7 +63,7 @@ function ErrorHandler() {
         eventBus.trigger(Events.ERROR, {error: 'download', event: {id: id, url: url, request: request}});
     }
 
-    // {message: "", id: "parse"|"nostreams", manifest: {parsed manifest}}
+    // {message: "", id: "codec"|"parse"|"nostreams", manifest: {parsed manifest}}
     function manifestError(message, id, manifest, err) {
         eventBus.trigger(Events.ERROR, {error: 'manifestError', event: {message: message, id: id, manifest: manifest, event: err}});
     }
@@ -85,10 +85,6 @@ function ErrorHandler() {
         eventBus.trigger(Events.ERROR, {error: 'key_message', event: err});
     }
 
-    function mssError(err) {
-        eventBus.trigger(Events.ERROR, {error: 'mssError', event: err});
-    }
-
     instance = {
         capabilityError: capabilityError,
         downloadError: downloadError,
@@ -96,8 +92,7 @@ function ErrorHandler() {
         timedTextError: timedTextError,
         mediaSourceError: mediaSourceError,
         mediaKeySessionError: mediaKeySessionError,
-        mediaKeyMessageError: mediaKeyMessageError,
-        mssError: mssError
+        mediaKeyMessageError: mediaKeyMessageError
     };
 
     return instance;
@@ -118,7 +113,5 @@ factory.MANIFEST_ERROR_ID_CODEC             = MANIFEST_ERROR_ID_CODEC;
 factory.MANIFEST_ERROR_ID_PARSE             = MANIFEST_ERROR_ID_PARSE;
 factory.MANIFEST_ERROR_ID_NOSTREAMS         = MANIFEST_ERROR_ID_NOSTREAMS;
 factory.TIMED_TEXT_ERROR_ID_PARSE           = TIMED_TEXT_ERROR_ID_PARSE;
-
-FactoryMaker.updateSingletonFactory(ErrorHandler.__dashjs_factory_name, factory);
 
 export default factory;

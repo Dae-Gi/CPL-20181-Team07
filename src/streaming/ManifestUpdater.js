@@ -31,6 +31,7 @@
 import EventBus from '../core/EventBus';
 import Events from '../core/events/Events';
 import FactoryMaker from '../core/FactoryMaker';
+import MediaPlayerModel from './models/MediaPlayerModel';
 import Debug from '../core/Debug';
 
 function ManifestUpdater() {
@@ -58,16 +59,15 @@ function ManifestUpdater() {
         if (config.dashManifestModel) {
             dashManifestModel = config.dashManifestModel;
         }
-        if (config.mediaPlayerModel) {
-            mediaPlayerModel = config.mediaPlayerModel;
-        }
-        if (config.manifestLoader) {
-            manifestLoader = config.manifestLoader;
-        }
     }
 
-    function initialize() {
-        resetInitialSettings();
+    function initialize(loader) {
+        manifestLoader = loader;
+        refreshDelay = NaN;
+        refreshTimer = null;
+        isUpdating = false;
+        isPaused = true;
+        mediaPlayerModel = MediaPlayerModel(context).getInstance();
 
         eventBus.on(Events.STREAMS_COMPOSED, onStreamsComposed, this);
         eventBus.on(Events.PLAYBACK_STARTED, onPlaybackStarted, this);
@@ -79,11 +79,8 @@ function ManifestUpdater() {
         update(manifest);
     }
 
-    function resetInitialSettings() {
-        refreshDelay = NaN;
-        isUpdating = false;
-        isPaused = true;
-        stopManifestRefreshTimer();
+    function getManifestLoader() {
+        return manifestLoader;
     }
 
     function reset() {
@@ -92,8 +89,11 @@ function ManifestUpdater() {
         eventBus.off(Events.PLAYBACK_PAUSED, onPlaybackPaused, this);
         eventBus.off(Events.STREAMS_COMPOSED, onStreamsComposed, this);
         eventBus.off(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, this);
-
-        resetInitialSettings();
+        stopManifestRefreshTimer();
+        isPaused = true;
+        isUpdating = false;
+        refreshDelay = NaN;
+        mediaPlayerModel = null;
     }
 
     function stopManifestRefreshTimer() {
@@ -103,16 +103,11 @@ function ManifestUpdater() {
         }
     }
 
-    function startManifestRefreshTimer(delay) {
+    function startManifestRefreshTimer() {
         stopManifestRefreshTimer();
-
-        if (isNaN(delay) && !isNaN(refreshDelay)) {
-            delay = refreshDelay * 1000;
-        }
-
-        if (!isNaN(delay)) {
-            log('Refresh manifest in ' + delay + ' milliseconds.');
-            refreshTimer = setTimeout(onRefreshTimer, delay);
+        if (!isNaN(refreshDelay)) {
+            log('Refresh manifest in ' + refreshDelay + ' seconds.');
+            refreshTimer = setTimeout(onRefreshTimer, refreshDelay * 1000);
         }
     }
 
@@ -134,11 +129,7 @@ function ManifestUpdater() {
         const date = new Date();
         const latencyOfLastUpdate = (date.getTime() - manifest.loadedTime.getTime()) / 1000;
         refreshDelay = dashManifestModel.getManifestUpdatePeriod(manifest, latencyOfLastUpdate);
-        // setTimeout uses a 32 bit number to store the delay. Any number greater than it
-        // will cause event associated with setTimeout to trigger immediately
-        if (refreshDelay * 1000 > 0x7FFFFFFF) {
-            refreshDelay = 0x7FFFFFFF / 1000;
-        }
+
         eventBus.trigger(Events.MANIFEST_UPDATED, {manifest: manifest});
         log('Manifest has been refreshed at ' + date + '[' + date.getTime() / 1000 + '] ');
 
@@ -148,13 +139,7 @@ function ManifestUpdater() {
     }
 
     function onRefreshTimer() {
-        if (isPaused && !mediaPlayerModel.getScheduleWhilePaused()) {
-            return;
-        }
-        if (isUpdating) {
-            startManifestRefreshTimer(mediaPlayerModel.getManifestUpdateRetryInterval());
-            return;
-        }
+        if (isPaused && !mediaPlayerModel.getScheduleWhilePaused() || isUpdating) return;
         refreshManifest();
     }
 
@@ -182,6 +167,7 @@ function ManifestUpdater() {
     instance = {
         initialize: initialize,
         setManifest: setManifest,
+        getManifestLoader: getManifestLoader,
         refreshManifest: refreshManifest,
         setConfig: setConfig,
         reset: reset
@@ -190,4 +176,4 @@ function ManifestUpdater() {
     return instance;
 }
 ManifestUpdater.__dashjs_factory_name = 'ManifestUpdater';
-export default FactoryMaker.getClassFactory(ManifestUpdater);
+export default FactoryMaker.getSingletonFactory(ManifestUpdater);

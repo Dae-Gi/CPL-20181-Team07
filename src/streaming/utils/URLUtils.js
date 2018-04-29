@@ -44,7 +44,6 @@ function URLUtils() {
 
     const schemeRegex = /^[a-z][a-z0-9+\-.]*:/i;
     const httpUrlRegex = /^https?:\/\//i;
-    const httpsUrlRegex = /^https:\/\//i;
     const originRegex = /^([a-z][a-z0-9+\-.]*:\/\/[^\/]+)\/?/i;
 
     /**
@@ -81,7 +80,7 @@ function URLUtils() {
      * @private
      */
     const dumbURLResolver = (url, baseUrl) => {
-        let baseUrlParseFunc = parseBaseUrl;
+        var baseUrlParseFunc = parseBaseUrl;
 
         if (!baseUrl) {
             return url;
@@ -227,17 +226,6 @@ function URLUtils() {
     }
 
     /**
-     * Determines whether the supplied url has https scheme
-     * @return {bool}
-     * @param {string} url
-     * @memberof module:URLUtils
-     * @instance
-     */
-    function isHTTPS(url) {
-        return httpsUrlRegex.test(url);
-    }
-
-    /**
      * Resolves a url given an optional base url
      * @return {string}
      * @param {string} url
@@ -259,7 +247,6 @@ function URLUtils() {
         isPathAbsolute:     isPathAbsolute,
         isSchemeRelative:   isSchemeRelative,
         isHTTPURL:          isHTTPURL,
-        isHTTPS:            isHTTPS,
         resolve:            resolve
     };
 

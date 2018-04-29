@@ -33,14 +33,13 @@ import FactoryMaker from '../../../core/FactoryMaker';
 
 function BasicSelector(config) {
 
-    config = config || {};
     let instance;
 
     const blacklistController = config.blacklistController;
 
     function select(baseUrls) {
-        let index = 0;
-        let selectedBaseUrl;
+        var index = 0;
+        var selectedBaseUrl;
 
         if (baseUrls && baseUrls.some((baseUrl, idx) => {
             index = idx;

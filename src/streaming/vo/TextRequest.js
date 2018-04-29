@@ -32,7 +32,6 @@
  * @class
  * @ignore
  */
-import Constants from '../constants/Constants';
 import FragmentRequest from './FragmentRequest';
 
 class TextRequest extends FragmentRequest {
@@ -40,8 +39,8 @@ class TextRequest extends FragmentRequest {
         super();
         this.url = url || null;
         this.type = type || null;
-        this.mediaType = Constants.STREAM;
-        this.responseType = ''; //'text' value returns a bad encoding response in Firefox
+        this.mediaType = 'stream';
+        this.responseType = 'text';
     }
 }
 

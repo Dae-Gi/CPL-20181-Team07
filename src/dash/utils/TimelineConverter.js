@@ -43,7 +43,10 @@ function TimelineConverter() {
         expectedLiveEdge;
 
     function initialize() {
-        resetInitialSettings();
+
+        clientServerTimeShift = 0;
+        isClientServerTimeSyncCompleted = false;
+        expectedLiveEdge = NaN;
         eventBus.on(Events.TIME_SYNCHRONIZATION_COMPLETED, onTimeSyncComplete, this);
     }
 
@@ -72,7 +75,7 @@ function TimelineConverter() {
     }
 
     function calcAvailabilityTimeFromPresentationTime(presentationTime, mpd, isDynamic, calculateEnd) {
-        let availabilityTime = NaN;
+        var availabilityTime = NaN;
 
         if (calculateEnd) {
             //@timeShiftBufferDepth specifies the duration of the time shifting buffer that is guaranteed
@@ -104,25 +107,26 @@ function TimelineConverter() {
     }
 
     function calcPresentationTimeFromWallTime(wallTime, period) {
+        //console.log("XXX", wallTime.getTime() - period.mpd.availabilityStartTime.getTime(), clientServerTimeShift * 1000, clientServerTimeShift, period.mpd.availabilityStartTime.getTime())
         return ((wallTime.getTime() - period.mpd.availabilityStartTime.getTime() + clientServerTimeShift * 1000) / 1000);
     }
 
     function calcPresentationTimeFromMediaTime(mediaTime, representation) {
-        const periodStart = representation.adaptation.period.start;
-        const presentationOffset = representation.presentationTimeOffset;
+        var periodStart = representation.adaptation.period.start;
+        var presentationOffset = representation.presentationTimeOffset;
 
         return mediaTime + (periodStart - presentationOffset);
     }
 
     function calcMediaTimeFromPresentationTime(presentationTime, representation) {
-        const periodStart = representation.adaptation.period.start;
-        const presentationOffset = representation.presentationTimeOffset;
+        var periodStart = representation.adaptation.period.start;
+        var presentationOffset = representation.presentationTimeOffset;
 
         return presentationTime - periodStart + presentationOffset;
     }
 
     function calcWallTimeForSegment(segment, isDynamic) {
-        let suggestedPresentationDelay,
+        var suggestedPresentationDelay,
             displayStartTime,
             wallTime;
 
@@ -135,32 +139,36 @@ function TimelineConverter() {
         return wallTime;
     }
 
-    function calcSegmentAvailabilityRange(voRepresentation, isDynamic) {
+    function calcSegmentAvailabilityRange(representation, isDynamic) {
+
         // Static Range Finder
-        const voPeriod = voRepresentation.adaptation.period;
-        const range = { start: voPeriod.start, end: voPeriod.start + voPeriod.duration };
+        const period = representation.adaptation.period;
+        const range = { start: period.start, end: period.start + period.duration };
         if (!isDynamic) return range;
 
-        if (!isClientServerTimeSyncCompleted && voRepresentation.segmentAvailabilityRange) {
-            return voRepresentation.segmentAvailabilityRange;
+        if (!isClientServerTimeSyncCompleted && representation.segmentAvailabilityRange) {
+            return representation.segmentAvailabilityRange;
         }
 
-        // Dynamic Range Finder
-        const d = voRepresentation.segmentDuration || (voRepresentation.segments && voRepresentation.segments.length ? voRepresentation.segments[voRepresentation.segments.length - 1].duration : 0);
-        const now = calcPresentationTimeFromWallTime(new Date(), voPeriod);
-        const periodEnd = voPeriod.start + voPeriod.duration;
-        range.start = Math.max((now - voPeriod.mpd.timeShiftBufferDepth), voPeriod.start);
-
-        const endOffset = voRepresentation.availabilityTimeOffset !== undefined &&
-            voRepresentation.availabilityTimeOffset < d ? d - voRepresentation.availabilityTimeOffset : d;
-        range.end = now >= periodEnd && now - endOffset < periodEnd ? periodEnd : now - endOffset;
+        //Dyanmic Range Finder
+        const d = representation.segmentDuration || (representation.segments && representation.segments.length ? representation.segments[representation.segments.length - 1].duration : 0);
+        const now = calcPresentationTimeFromWallTime(new Date(), period);
+        const periodEnd = period.start + period.duration;
+        range.start = Math.max((now - period.mpd.timeShiftBufferDepth), period.start);
+        range.end = now >= periodEnd && now - d < periodEnd ? periodEnd - d : now - d;
 
         return range;
     }
 
     function calcPeriodRelativeTimeFromMpdRelativeTime(representation, mpdRelativeTime) {
-        const periodStartTime = representation.adaptation.period.start;
+        var periodStartTime = representation.adaptation.period.start;
         return mpdRelativeTime - periodStartTime;
+    }
+
+    function calcMpdRelativeTimeFromPeriodRelativeTime(representation, periodRelativeTime) {
+        var periodStartTime = representation.adaptation.period.start;
+
+        return periodRelativeTime + periodStartTime;
     }
 
     /*
@@ -182,20 +190,16 @@ function TimelineConverter() {
 
     function calcMSETimeOffset(representation) {
         // The MSEOffset is offset from AST for media. It is Period@start - presentationTimeOffset
-        const presentationOffset = representation.presentationTimeOffset;
-        const periodStart = representation.adaptation.period.start;
+        var presentationOffset = representation.presentationTimeOffset;
+        var periodStart = representation.adaptation.period.start;
         return (periodStart - presentationOffset);
-    }
-
-    function resetInitialSettings() {
-        clientServerTimeShift = 0;
-        isClientServerTimeSyncCompleted = false;
-        expectedLiveEdge = NaN;
     }
 
     function reset() {
         eventBus.off(Events.TIME_SYNCHRONIZATION_COMPLETED, onTimeSyncComplete, this);
-        resetInitialSettings();
+        clientServerTimeShift = 0;
+        isClientServerTimeSyncCompleted = false;
+        expectedLiveEdge = NaN;
     }
 
     instance = {
@@ -211,6 +215,7 @@ function TimelineConverter() {
         calcPresentationTimeFromWallTime: calcPresentationTimeFromWallTime,
         calcPresentationTimeFromMediaTime: calcPresentationTimeFromMediaTime,
         calcPeriodRelativeTimeFromMpdRelativeTime: calcPeriodRelativeTimeFromMpdRelativeTime,
+        calcMpdRelativeTimeFromPeriodRelativeTime: calcMpdRelativeTimeFromPeriodRelativeTime,
         calcMediaTimeFromPresentationTime: calcMediaTimeFromPresentationTime,
         calcSegmentAvailabilityRange: calcSegmentAvailabilityRange,
         calcWallTimeForSegment: calcWallTimeForSegment,

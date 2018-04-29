@@ -35,21 +35,21 @@ import {replaceTokenForTemplate, getIndexBasedSegment, decideSegmentListRangeFor
 
 function TemplateSegmentsGetter(config, isDynamic) {
 
-    const timelineConverter = config.timelineConverter;
+    let timelineConverter = config.timelineConverter;
 
     let instance;
 
     function getSegmentsFromTemplate(representation, requestedTime, index, availabilityUpperLimit) {
-        const template = representation.adaptation.period.mpd.manifest.Period_asArray[representation.adaptation.period.index].
+        var template = representation.adaptation.period.mpd.manifest.Period_asArray[representation.adaptation.period.index].
             AdaptationSet_asArray[representation.adaptation.index].Representation_asArray[representation.index].SegmentTemplate;
-        const duration = representation.segmentDuration;
-        const availabilityWindow = representation.segmentAvailabilityRange;
+        var duration = representation.segmentDuration;
+        var availabilityWindow = representation.segmentAvailabilityRange;
 
-        const segments = [];
-        let url = null;
-        let seg = null;
+        var segments = [];
+        var url = null;
+        var seg = null;
 
-        let segmentRange,
+        var segmentRange,
             periodSegIdx,
             startIdx,
             endIdx,
