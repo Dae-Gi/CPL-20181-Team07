@@ -90,7 +90,9 @@ function ABRRulesCollection() {
             );
         } else {
             qualitySwitchRules.push(RandomSwitchRule(context).create({
-                webSockConnection: webSockController.getConnection()
+                webSockConnection: webSockController.getConnection(),
+                metricsModel: metricsModel,
+                dashMetrics: dashMetrics
             }));
             abandonFragmentRules.push(AbandonRequestsRule(context).create());
         }

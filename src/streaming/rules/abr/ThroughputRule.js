@@ -208,6 +208,8 @@ function ThroughputRule(config) {
 
     const instance = {
         getMaxIndex: getMaxIndex,
+        getAverageLatency: getAverageLatency,
+        getAverageThroughput: getAverageThroughput,
         reset: reset
     };
 
