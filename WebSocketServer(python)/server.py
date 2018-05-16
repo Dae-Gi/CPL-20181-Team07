@@ -3,31 +3,27 @@ import random
 import json
 import threading
  
-def setqual():
-    while True:
-        qual = input("input : ")
-        f = open("qual.txt", 'w')
-        f.write(qual)
-        f.close()
-
 class SimpleEcho(WebSocket):
     def handleMessage(self):
         msg = json.loads(self.data)
-        f = open("qual.txt", 'r')
-        qual = f.read()
-        msg['quality'] = qual
-        f.close()
+        print('recv', msg)
+        f = open("train.txt", 'a')
+        x1 = msg['throughput']
+        x2 = msg['latency']         
+        y = msg['value']
+        data = str(x1) + " " + str(x2) + " " + str(y) + str('\n')
+        f.write(data)
+        msg['quality'] = 10
         msg['reason'] = 'random'
+        print('send', msg)
+        f.close()
         self.sendMessage(json.dumps(msg))
 
-    #def handleConnected(self):
-    #    print(self.address, 'connected')
+    def handleConnected(self):
+        print(self.address, 'connected')
 
-    #def handleClose(self):
-    #    print(self.address, 'closed')
+    def handleClose(self):
+        print(self.address, 'closed')
 
 server = SimpleWebSocketServer('192.168.253.129', 9000, SimpleEcho)
-t = threading.Thread(target=setqual, args=())
-t.daemon = True
-t.start()
 server.serveforever()

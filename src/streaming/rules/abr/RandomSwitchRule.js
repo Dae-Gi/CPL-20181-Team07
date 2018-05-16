@@ -11,7 +11,7 @@ import AbrController from '../../controllers/AbrController';
 
 function RandomSwitchRule(config) {
     const context = this.context;
-    const name = 'RandomSwitchrule';
+    const name = 'AIswitchrule';
     let webSockConnection;
     const MAX_MEASUREMENTS_TO_KEEP = 20;
     const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE = 3;
@@ -166,8 +166,9 @@ function RandomSwitchRule(config) {
             }
 
             abrController.setAverageThroughput(mediaType, throughput);
+            switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
 
-            let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput };
+            let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
             console.log('msg: ', msg);
             webSockConnection.send(JSON.stringify(msg));
         }
