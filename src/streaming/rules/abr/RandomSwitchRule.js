@@ -166,11 +166,17 @@ function RandomSwitchRule(config) {
             }
 
             abrController.setAverageThroughput(mediaType, throughput);
-            switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
+            if (abrController.getAbandonmentStateFor(mediaType) !== AbrController.ABANDON_LOAD) {
+                if (bufferStateVO.state === BufferController.BUFFER_LOADED || isDynamic) {
+                    switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
+                    streamProcessor.getScheduleController().setTimeToLoadDelay(0);
+                    console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
+                    let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
+                    console.log('msg: ', msg);
+                    webSockConnection.send(JSON.stringify(msg));
+                }
+            }
 
-            let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
-            console.log('msg: ', msg);
-            webSockConnection.send(JSON.stringify(msg));
         }
         return switchRequest;
     }

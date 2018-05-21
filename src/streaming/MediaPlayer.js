@@ -168,12 +168,13 @@ function MediaPlayer() {
             attachView(view);
         }
 
-        if (source) {
-            attachSource(source);
-        }
         let webSockController = WebSockController(context).getInstance();
         webSockController.initialize();
         log('[dash.js ' + getVersion() + '] ' + 'MediaPlayer has been initialized');
+
+        if (source) {
+            attachSource(source);
+        }
     }
 
     /**
