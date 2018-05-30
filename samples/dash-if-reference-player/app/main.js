@@ -21,6 +21,16 @@ angular.module('DashContributorsService', ['ngResource']).factory('contributors'
 
 app.controller('DashController', function($scope, sources, contributors) {
 
+    var loadInfo = function (videoId) {
+        var gdata = document.createElement("script");
+        gdata.src = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=jsonc&callback=storeInfo";
+        var body = document.getElementsByTagName("body")[0];
+        body.appendChild(gdata);
+    };
+
+    var storeInfo = function (info) {
+        console.log(info.data.title);
+    };
 
     $scope.selectedItem = {url:"http://dash.edgesuite.net/akamai/bbb_30fps/bbb_30fps.mpd"};
 
@@ -111,7 +121,8 @@ app.controller('DashController', function($scope, sources, contributors) {
             latency:        {data: [], selected: false, color: '#326e88', label: 'Audio Latency (ms)'},
             droppedFPS:     {data: [], selected: false, color: '#004E64', label: 'Audio Dropped FPS'}
         },
-        video:{
+        video: {
+            title:          { data: [], selected: true, color: '#00589d', label: 'Video Buffer Level' },
             buffer:         {data: [], selected: true, color: '#00589d', label: 'Video Buffer Level'},
             bitrate:        {data: [], selected: true, color: '#ff7900', label: 'Video Bitrate (kbps)'},
             index:          {data: [], selected: false, color: '#326e88', label: 'Video Current Quality'},
@@ -145,6 +156,7 @@ app.controller('DashController', function($scope, sources, contributors) {
     $scope.videoPendingIndex = 0;
     $scope.videoMaxIndex = 0;
     $scope.videoBufferLength = 0;
+    $scope.videotitle = "";
     $scope.videoDroppedFrames = 0;
     $scope.videoLatencyCount = 0;
     $scope.videoLatency = "";
@@ -158,6 +170,7 @@ app.controller('DashController', function($scope, sources, contributors) {
     $scope.audioPendingIndex = "";
     $scope.audioMaxIndex = 0;
     $scope.audioBufferLength = 0;
+    $scope.audiotitle = "";
     $scope.audioDroppedFrames = 0;
     $scope.audioLatencyCount = 0;
     $scope.audioLatency = "";
@@ -527,7 +540,7 @@ app.controller('DashController', function($scope, sources, contributors) {
     };
 
     $scope.getOptionsButtonLabel = function () {
-        return $scope.optionsGutter ? "Hide Options" : "Show Options";
+        return $scope.optionsGutter ? "옵션 숨기기" : "옵션 보기";
     };
 
     $scope.setDrmKeySystem = function(item) {
@@ -663,7 +676,7 @@ app.controller('DashController', function($scope, sources, contributors) {
         var dashMetrics = $scope.player.getDashMetrics();
 
         if (metrics && dashMetrics && $scope.streamInfo) {
-
+            var title = 'test';
             var periodIdx = $scope.streamInfo.index;
             var repSwitch = dashMetrics.getCurrentRepresentationSwitch(metrics);
             var bufferLevel = dashMetrics.getCurrentBufferLevel(metrics);
@@ -672,6 +685,7 @@ app.controller('DashController', function($scope, sources, contributors) {
             var bitrate = repSwitch ? Math.round(dashMetrics.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN;
             var droppedFPS = dashMetrics.getCurrentDroppedFrames(metrics) ? dashMetrics.getCurrentDroppedFrames(metrics).droppedFrames : 0;
 
+            $scope[type + "title"] = title;
             $scope[type + "BufferLength"] = bufferLevel;
             $scope[type + "MaxIndex"] = maxIndex;
             $scope[type + "Bitrate"] = bitrate;

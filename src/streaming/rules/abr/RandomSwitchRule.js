@@ -30,6 +30,11 @@ function RandomSwitchRule(config) {
         latencyArray,
         mediaPlayerModel;
 
+    var generateRandom = function (min, max) {
+        var ranNum = Math.floor(Math.random() * (max - min + 1)) + min;
+        return ranNum;
+    };
+
     function setup() {
         throughputArray = [];
         latencyArray = [];
@@ -131,7 +136,7 @@ function RandomSwitchRule(config) {
             return switchRequest;
         }
 
-        if (webSockConnection.readyState != 1) {
+        if (webSockConnection.readyState !== 1) {
             return switchRequest;
         }
 
@@ -168,12 +173,29 @@ function RandomSwitchRule(config) {
             abrController.setAverageThroughput(mediaType, throughput);
             if (abrController.getAbandonmentStateFor(mediaType) !== AbrController.ABANDON_LOAD) {
                 if (bufferStateVO.state === BufferController.BUFFER_LOADED || isDynamic) {
+<<<<<<< HEAD
+                    if (mediaInfo.type == 'video') {
+                        latency = document.getElementById('latency').value;
+                        throughput = document.getElementById('throghput').value;
+                        switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
+                        streamProcessor.getScheduleController().setTimeToLoadDelay(0);
+                        console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
+                        let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
+                        console.log('msg: ', msg);
+=======
                     switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
                     streamProcessor.getScheduleController().setTimeToLoadDelay(0);
                     console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
                     let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
                     console.log('msg: ', msg);
-                    webSockConnection.send(JSON.stringify(msg));
+                    if (mediaType === 'video')
+                    {
+<<<<<<< HEAD
+>>>>>>> 504c8780d96d7e949b8f4f4c322b0d716a4e52ba
+=======
+>>>>>>> 504c8780d96d7e949b8f4f4c322b0d716a4e52ba
+                        webSockConnection.send(JSON.stringify(msg));
+                    }
                 }
             }
 

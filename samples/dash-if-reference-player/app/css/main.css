@@ -1,5 +1,5 @@
 body {
-    background: #eee;
+    background: #ffffff;
     min-width: 320px;
     overflow-x: hidden;
 }
@@ -30,11 +30,12 @@ a:hover {
 *****************************/
 
 .title-header a img {
-    height: 50px;
+    height: 40px;
+    margin-top: -15px;
 }
 
 .title-header span {
-    font-size: 24px;
+    font-size: 40px;
     line-height: 50px;
 }
 
@@ -97,7 +98,7 @@ a:hover {
 }
 
 .options-item-title {
-    background-color: #136bfb;
+    background-color: #d80404;
     height: 20px;
     padding-top: .2rem;
     text-align: center;
@@ -174,7 +175,7 @@ a:hover {
 }
 
 .text-primary {
-    color:#428bca;
+    color:#000000;
     font-weight: 500;
     padding-right: 3px;
 }
@@ -194,7 +195,7 @@ a:hover {
 }
 
 .tab-pane {
-    font-size: 14px;
+    font-size: 20px;
 }
 
 /****************************
