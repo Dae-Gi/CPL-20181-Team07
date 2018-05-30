@@ -124,7 +124,7 @@ function AbrController() {
         abandonmentStateDict[type] = abandonmentStateDict[type] || {};
         abandonmentStateDict[type].state = ALLOW_LOAD;
         eventBus.on(Events.LOADING_PROGRESS, onFragmentLoadProgress, this);
-        if (type == 'video') {
+        if (type === 'video') {
             eventBus.on(MediaPlayerEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered, this);
             droppedFramesHistory = DroppedFramesHistory(context).create();
             setElementSize();
@@ -313,7 +313,7 @@ function AbrController() {
         const type = streamProcessor.getType();
         const streamInfo = streamProcessor.getStreamInfo();
         const streamId = streamInfo.id;
-        const oldQuality = getQualityFor(type, StreamInfo);
+        const oldQuality = getQualityFor(type, streamInfo);
         const topQualityIdx = getTopQualityIndexFor(type, streamId);
         let newQuality = switchRequest.value;
         if (newQuality > topQualityIdx) {
@@ -321,7 +321,7 @@ function AbrController() {
         }
         console.log('setQuality Callback : ', oldQuality, newQuality);
         switchHistoryDict[type].push({ oldValue: oldQuality, newValue: newQuality });
-        if (newQuality > SwitchRequest.NO_CHANGE && newQuality != oldQuality) {
+        if (newQuality > SwitchRequest.NO_CHANGE && newQuality !== oldQuality) {
             if (abandonmentStateDict[type].state === ALLOW_LOAD || newQuality > oldQuality) {
                 changeQuality(type, streamInfo, oldQuality, newQuality, topQualityIdx, switchRequest.reason);
             }

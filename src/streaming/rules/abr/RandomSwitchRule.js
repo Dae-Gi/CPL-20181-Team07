@@ -131,7 +131,7 @@ function RandomSwitchRule(config) {
             return switchRequest;
         }
 
-        if (webSockConnection.readyState != 1) {
+        if (webSockConnection.readyState !== 1) {
             return switchRequest;
         }
 
@@ -173,7 +173,9 @@ function RandomSwitchRule(config) {
                     console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
                     let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
                     console.log('msg: ', msg);
-                    webSockConnection.send(JSON.stringify(msg));
+                    if (mediaType === 'video'){
+                        webSockConnection.send(JSON.stringify(msg));
+                    }
                 }
             }
 
