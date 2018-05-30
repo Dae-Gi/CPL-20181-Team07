@@ -191,6 +191,9 @@ function RandomSwitchRule(config) {
                     if (mediaType === 'video')
                     {
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 504c8780d96d7e949b8f4f4c322b0d716a4e52ba
+=======
 >>>>>>> 504c8780d96d7e949b8f4f4c322b0d716a4e52ba
 =======
 >>>>>>> 504c8780d96d7e949b8f4f4c322b0d716a4e52ba
