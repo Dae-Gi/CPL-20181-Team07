@@ -175,9 +175,9 @@ function RandomSwitchRule(config) {
                 if (bufferStateVO.state === BufferController.BUFFER_LOADED || isDynamic) {
                     if (mediaInfo.type == 'video') {
                         if (document.getElementById('latency').value != '-1')
-                            latency = document.getElementById('latency').value;
+                            latency = parseInt(document.getElementById('latency').value);
                         if (document.getElementById('throghput').value != '-1')
-                            throughput = document.getElementById('throghput').value;
+                            throughput = parseInt(document.getElementById('throghput').value);
                         switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
                         streamProcessor.getScheduleController().setTimeToLoadDelay(0);
                         console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');

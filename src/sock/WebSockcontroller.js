@@ -1,6 +1,6 @@
 import FactoryMaker from '../core/FactoryMaker';
 
-const HOST_NAME = 'ws://192.168.253.130';
+const HOST_NAME = 'ws://192.168.253.129';
 const HOST_PORT = '9000';
 
 function WebSocketController() {
