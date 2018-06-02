@@ -181,7 +181,7 @@ function RandomSwitchRule(config) {
                         switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
                         streamProcessor.getScheduleController().setTimeToLoadDelay(0);
                         console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
-                        let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value };
+                        let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value, type: 'default' };
                         console.log('msg: ', msg);
                         webSockConnection.send(JSON.stringify(msg));
                     }
