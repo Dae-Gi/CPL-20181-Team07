@@ -173,7 +173,16 @@ function RandomSwitchRule(config) {
             abrController.setAverageThroughput(mediaType, throughput);
             if (abrController.getAbandonmentStateFor(mediaType) !== AbrController.ABANDON_LOAD) {
                 if (bufferStateVO.state === BufferController.BUFFER_LOADED || isDynamic) {
+                    let type;
                     if (mediaInfo.type == 'video') {
+                        if (document.getElementById('default').checked === true)
+                            type = 'default';
+                        else if (document.getElementById('music').checked === true)
+                            type = 'music';
+                        else if (document.getElementById('sport').checked === true)
+                            type = 'sport';
+                        else
+                            type = 'default';
                         if (document.getElementById('latency').value != '-1')
                             latency = parseInt(document.getElementById('latency').value);
                         if (document.getElementById('throghput').value != '-1')
@@ -181,7 +190,7 @@ function RandomSwitchRule(config) {
                         switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
                         streamProcessor.getScheduleController().setTimeToLoadDelay(0);
                         console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
-                        let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value, type: 'default' };
+                        let msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value, type: type };
                         console.log('msg: ', msg);
                         webSockConnection.send(JSON.stringify(msg));
                     }
