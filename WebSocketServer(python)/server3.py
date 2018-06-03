@@ -14,14 +14,14 @@ class SimpleEcho(WebSocket):
             msg['quality'] = y
         if msg['type'] == "music":
             if y>7:                
-                msg['quality'] = y/5 #2
+                msg['quality'] = 3 #2
             if y<3:
-                msg['quality'] = y/3 #1
+                msg['quality'] = 1 #1
             else :
-                msg['quality'] = y/6 #1.5
+                msg['quality'] = 2 #2
         if msg['type'] == "sport":
             if y>7:
-                msg['quality'] = y/2
+                msg['quality'] = 5
             if y<3:
                 msg['quality'] = 2
             else :
