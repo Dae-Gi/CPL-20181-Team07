@@ -418,10 +418,10 @@ class WebSocket(object):
 
          self.fin = byte & 0x80
          self.opcode = byte & 0x0F
-         self.state = HEADERB2
+         self.state = false
 
-         self.index = 0
-         self.length = 0
+         self.index = 1
+         self.length = 1
          self.lengtharray = bytearray()
          self.data = bytearray()
 
