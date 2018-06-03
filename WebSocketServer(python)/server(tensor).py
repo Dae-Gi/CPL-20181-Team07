@@ -52,7 +52,7 @@ class SimpleEcho(WebSocket):
             p = sess.run([predictions], feed_dict = {X:[[min(1, msg['throughput']/thr_max), min(1, msg['latency']/lat_max)]]})
         except Exception as e:
             print(e)
-        print('AI°¡ °áÁ¤ÇÑ Ç°Áú : ', p[0][0])
+        print('AIê°€ ê²°ì •í•œ í’ˆì§ˆ : ', p[0][0])
         msg['quality'] = int(p[0][0])
         msg['reason'] = 'random'
         
@@ -71,7 +71,7 @@ class SimpleEcho(WebSocket):
     def handleClose(self):
         print(self.address, 'closed')
 
-server = SimpleWebSocketServer('192.168.253.129', 9000, SimpleEcho)
+server = SimpleWebSocketServer('localhost', 9000, SimpleEcho)
 server.serveforever()
 
 while(True):
