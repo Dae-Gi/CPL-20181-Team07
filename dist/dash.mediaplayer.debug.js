@@ -10290,7 +10290,7 @@ var _coreFactoryMaker = _dereq_(8);
 
 var _coreFactoryMaker2 = _interopRequireDefault(_coreFactoryMaker);
 
-var HOST_NAME = 'ws://192.168.253.129';
+var HOST_NAME = 'ws://localhost';
 var HOST_PORT = '9000';
 
 function WebSocketController() {
@@ -10339,7 +10339,7 @@ var _coreFactoryMaker = _dereq_(8);
 
 var _coreFactoryMaker2 = _interopRequireDefault(_coreFactoryMaker);
 
-var HOST_NAME = 'ws://192.168.253.129';
+var HOST_NAME = 'ws://localhost';
 var HOST_PORT = '9000';
 
 function WebSocketController() {
