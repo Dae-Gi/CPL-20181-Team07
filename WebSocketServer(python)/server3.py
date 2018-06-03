@@ -13,9 +13,19 @@ class SimpleEcho(WebSocket):
         if msg['type'] == 'default':
             msg['quality'] = y
         if msg['type'] == "music":
-            msg['quality'] = y/10
+            if y>7:                
+                msg['quality'] = y/5 #2
+            if y<3:
+                msg['quality'] = y/3 #1
+            else :
+                msg['quality'] = y/6 #1.5
         if msg['type'] == "sport":
-            msg['quality'] = y/5
+            if y>7:
+                msg['quality'] = y/2
+            if y<3:
+                msg['quality'] = 2
+            else :
+                msg['quality'] = 3 
         
         print('send', msg)
         self.sendMessage(json.dumps(msg))
