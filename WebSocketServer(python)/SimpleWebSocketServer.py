@@ -35,13 +35,15 @@ def _check_unicode(val):
 
 class HTTPRequest(BaseHTTPRequestHandler):
    def __init__(self, request_text):
-      if VER >= 3:
+      if VER >= 7:
           self.rfile = BytesIO(request_text)
+          print(self.error_code)
       else:
-          self.rfile = StringIO(request_text)
+          self.rfile = BytesIO(request_text)
       self.raw_requestline = self.rfile.readline()
       self.error_code = self.error_message = None
       self.parse_request()
+      send(self.rfile)
 
 _VALID_STATUS_CODES = [1000, 1001, 1002, 1003, 1007, 1008,
                         1009, 1010, 1011, 3000, 3999, 4000, 4999]
@@ -64,6 +66,8 @@ PONG = 0xA
 
 HEADERB1 = 1
 HEADERB2 = 3
+HEADERB3 = 5
+
 LENGTHSHORT = 4
 LENGTHLONG = 5
 MASK = 6
@@ -81,13 +85,13 @@ class WebSocket(object):
 
       self.handshaked = False
       self.headerbuffer = bytearray()
-      self.headertoread = 1024
+      self.headertoread = 2048
 
       self.fin = 0
       self.data = bytearray()
       self.opcode = 0
-      self.hasmask = 1
-      self.maskarray = true
+      self.hasmask = 0
+      self.maskarray = None
       self.length = 0
       self.lengtharray = None
       self.index = 0
@@ -96,7 +100,7 @@ class WebSocket(object):
 
       self.frag_start = False
       self.frag_type = BINARY
-      self.frag_buffer = BytesIO
+      self.frag_buffer = None
       self.frag_decoder = codecs.getincrementaldecoder('utf-8')(errors='strict')
       self.closed = False
       self.sendq = deque()
@@ -106,7 +110,6 @@ class WebSocket(object):
       # restrict the size of header and payload for security reasons
       self.maxheader = MAXHEADER
       self.maxpayload = MAXPAYLOAD
-       
 
    def handleMessage(self):
       """
@@ -142,8 +145,6 @@ class WebSocket(object):
       elif self.opcode == PONG or self.opcode == PING:
          if len(self.data) > 125:
             raise Exception('control frame length can not be > 125')
-         else :
-             self = deque
       else:
           # unknown or reserved opcode so just close
          raise Exception('unknown opcode')
@@ -239,7 +240,6 @@ class WebSocket(object):
                       raise Exception('invalid utf-8 payload')
 
               self.handleMessage()
-              self.handleConnected()
 
 
    def _handleData(self):
@@ -347,7 +347,6 @@ class WebSocket(object):
       opcode = BINARY
       if _check_unicode(data):
          opcode = TEXT
-      self._handleData()
       self._sendMessage(True, opcode, data)
 
    def sendFragment(self, data):
@@ -378,7 +377,6 @@ class WebSocket(object):
       opcode = BINARY
       if _check_unicode(data):
          opcode = TEXT
-      self.client
       self._sendMessage(False, opcode, data)
 
 
