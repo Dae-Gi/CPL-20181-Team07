@@ -35,15 +35,13 @@ def _check_unicode(val):
 
 class HTTPRequest(BaseHTTPRequestHandler):
    def __init__(self, request_text):
-      if VER >= 7:
+      if VER >= 3:
           self.rfile = BytesIO(request_text)
-          print(self.error_code)
       else:
-          self.rfile = BytesIO(request_text)
+          self.rfile = StringIO(request_text)
       self.raw_requestline = self.rfile.readline()
       self.error_code = self.error_message = None
       self.parse_request()
-      send(self.rfile)
 
 _VALID_STATUS_CODES = [1000, 1001, 1002, 1003, 1007, 1008,
                         1009, 1010, 1011, 3000, 3999, 4000, 4999]
@@ -66,8 +64,6 @@ PONG = 0xA
 
 HEADERB1 = 1
 HEADERB2 = 3
-HEADERB3 = 5
-
 LENGTHSHORT = 4
 LENGTHLONG = 5
 MASK = 6
