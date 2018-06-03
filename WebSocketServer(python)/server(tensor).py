@@ -44,7 +44,7 @@ class SimpleEcho(WebSocket):
         f = open("train.txt", 'a')
         x1 = msg['throughput']
         x2 = msg['latency'] 
-        x3 = msg['error']
+        #x3 = msg['error']
         y = msg['value']
         data = str(x1) + " " + str(x2) + " " + str(y) + str('\n')
         f.write(data)
@@ -55,10 +55,12 @@ class SimpleEcho(WebSocket):
         print('AI가 결정한 품질 : ', p[0][0])
         msg['quality'] = int(p[0][0])
         msg['reason'] = 'random'
-        if int(p[0][0])> 20:
-            msg['error'] = 'over'
-        else:
-            msg['error'] = 'deault'
+        
+        #if int(p[0][0])> 20:
+        #   msg['error'] = 'over'
+        #else:
+        #   msg['error'] = 'deault'
+        
         print('send', msg)
         f.close()
         self.sendMessage(json.dumps(msg))
