@@ -31517,10 +31517,22 @@ function RandomSwitchRule(config) {
                 if (bufferStateVO.state === _controllersBufferController2['default'].BUFFER_LOADED || isDynamic) {
                     var type = undefined;
                     if (mediaInfo.type == 'video') {
-                        if (document.getElementById('default').checked === true) type = 'default';else if (document.getElementById('music').checked === true) type = 'music';else if (document.getElementById('sport').checked === true) type = 'sport';else type = 'default';
                         if (document.getElementById('latency').value != '-1') latency = parseInt(document.getElementById('latency').value);
                         if (document.getElementById('throghput').value != '-1') throughput = parseInt(document.getElementById('throghput').value);
                         switchRequest.value = abrController.getQualityForBitrate(mediaInfo, throughput, latency);
+                        if (document.getElementById('default').checked === true) {
+                            type = 'default';
+                        } else if (document.getElementById('music').checked === true) {
+                            type = 'music';
+                            switchRequest.value = switchRequest.value - 5;
+                            if (switchRequest.value < 0) switchRequest.value = 0;
+                        } else if (document.getElementById('sport').checked === true) {
+                            type = 'sport';
+                            switchRequest.value = switchRequest.value - 3;
+                            if (switchRequest.value < 0) switchRequest.value = 0;
+                        } else {
+                            type = 'default';
+                        }
                         streamProcessor.getScheduleController().setTimeToLoadDelay(0);
                         console.log('AISwitchRule requesting switch to index: ', switchRequest.value, 'type: ', 'Average Throughput', Math.round(throughput), 'kbps');
                         var msg = { rule: this.name, idx: idx, msg: 'request quality', latency: latency, throughput: throughput, value: switchRequest.value, type: type };

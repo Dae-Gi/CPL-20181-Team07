@@ -7,7 +7,7 @@ class SimpleEcho(WebSocket):
     def handleMessage(self):
         msg = json.loads(self.data)
         print('recv', msg)
-        f = open("train.txt", 'a')
+        f = open("train3.txt", 'a')
         x1 = msg['throughput']
         x2 = msg['latency']         
         y = msg['value']
