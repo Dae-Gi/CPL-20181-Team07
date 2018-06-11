@@ -150,33 +150,42 @@
                                          title="타이틀 받아옴">Title :</label> {{videotitle}}
                               </div>
                               <div class="text-success">
+                                  <input id="videoBufferCB" type="checkbox" ng-model="chartState.video.buffer.selected" ng-change="enableChartByName('buffer', 'video')">
                                   <label class="text-primary" for="videoBufferCB" data-toggle="tooltip" data-placement="top"
                                          title="The length of the forward buffer, in seconds">Buffer Length :</label> {{videoBufferLength}}
-                              </div>                            <div class="text-success">
+                              </div>                            
+                              <div class="text-success">
+                                  <input id="videoBitrateCB" type="checkbox" ng-model="chartState.video.bitrate.selected" ng-change="enableChartByName('bitrate', 'video')">
                                   <label class="text-primary" for="videoBitrateCB" data-toggle="tooltip" data-placement="top"
                                          title="The bitrate of the representation being downloaded">Bitrate Downloading :</label> {{videoBitrate}} kbps
                               </div>
                               <div class="text-success">
+                                  <input id="videoPendingIndexCB" type="checkbox" ng-model="chartState.video.pendingIndex.selected" ng-change="enableChartByName('pendingIndex', 'video')">
                                   <label class="text-primary" for="videoPendingIndexCB" data-toggle="tooltip" data-placement="top"
                                          title="The representation index being downloaded and appended to the buffer">Index Downloading :</label> {{videoPendingIndex}}
                               </div>
                               <div class="text-success">
+                                  <input id="videoIndexCB" type="checkbox" ng-model="chartState.video.index.selected" ng-change="enableChartByName('index', 'video')">
                                   <label class="text-primary" for="videoIndexCB" data-toggle="tooltip" data-placement="top"
                                          title="The representation index being rendered.">Current Index / Max Index :</label> {{videoIndex}} / {{videoMaxIndex}}
                               </div>
                               <div class="text-success">
+                                  <input id="videoDroppedFramesCB" type="checkbox" ng-model="chartState.video.droppedFPS.selected" ng-change="enableChartByName('droppedFPS', 'video')">
                                   <label class="text-primary" for="videoDroppedFramesCB" data-toggle="tooltip" data-placement="top"
                                          title="The absolute count of frames dropped by the rendering pipeline since play commenced">Dropped Frames :</label> {{videoDroppedFrames}}
                               </div>
                               <div class="text-success">
+                                  <input id="videoLatencyCB" type="checkbox" ng-model="chartState.video.latency.selected" ng-change="enableChartByName('latency', 'video')">
                                   <label class="text-primary" for="videoLatencyCB" data-toggle="tooltip" data-placement="top"
                                          title="The minimum, average and maximum latency over the last 4 requested segments. Latency is the time in seconds from request of segment to receipt of first byte">Latency (min|avg|max) :</label> {{videoLatency}}
                               </div>
                               <div class="text-success">
+                                  <input id="videoDownloadCB" type="checkbox" ng-model="chartState.video.download.selected" ng-change="enableChartByName('download', 'video')">
                                   <label class="text-primary" for="videoDownloadCB" data-toggle="tooltip" data-placement="top"
                                          title="The minimum, average and maximum download time for the last 4 requested segments. Download time is the time in seconds from first byte being received to the last byte">Download (min|avg|max) :</label> {{videoDownload}}
                               </div>
                               <div class="text-success">
+                                  <input id="videoRatioCB" type="checkbox" ng-model="chartState.video.ratio.selected" ng-change="enableChartByName('ratio', 'video')">
                                   <label class="text-primary" for="videoRatioCB" data-toggle="tooltip" data-placement="top"
                                          title="The minimum, average and maximum ratio of the segment playback time to total download time over the last 4 segments">Ratio (min|avg|max) :</label> {{videoRatio}}
                               </div>
@@ -210,6 +219,22 @@
                           </div>
                       </div>
                     </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="chart-panel">
+            <div class="chart-controls">
+                <div class="btn-group">
+                    <button id="disable-chart-btn" class="btn btn-primary" ng-click="clearChartData()" ng-cloak>Clear</button>
+                    <button id="disable-chart-btn" class="btn btn-primary" ng-click="onChartEnableButtonClick()" ng-cloak>{{getChartButtonLabel()}}</button>
+                </div>
+                <div id="legend-wrapper" class="legend-row">
+                </div>
+            </div>
+            <div id="chart-wrapper">
+                <div id="chart-inventory">
+                    <flot dataset="chartData" options="chartOptions"></flot>
                 </div>
             </div>
         </div>
