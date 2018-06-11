@@ -106,23 +106,24 @@ class SimpleEcho(WebSocket):
     def handleMessage(self):
         msg = json.loads(self.data)
         print('recv', msg)
-        f = open("train.txt", 'a')
         x1 = msg['throughput']
         x2 = msg['latency']
         y = msg['value']
-        data = str(x1) + " " + str(x2) + " " + str(y) + str('\n')
-        f.write(data)
         try:
             if msg['type'] == 'default':
-                p = sess1.run([predictions1], feed_dict = {X1:[[min(1, msg['throughput']/thr_max1), min(1, msg['latency']/lat_max1)]]})
+                p1 = sess1.run([predictions1], feed_dict = {X1:[[min(1, msg['throughput']/thr_max1), min(1, msg['latency']/lat_max1)]]})
+                print('AI가 결정한 품질 : ', int(p1[0][0]))
+                msg['quality'] = int(p1[0][0])
             if msg['type'] == 'sport':
-                p = sess2.run([predictions2], feed_dict = {X2:[[min(1, msg['throughput']/thr_max2), min(1, msg['latency']/lat_max2)]]})
+                p2 = sess2.run([predictions2], feed_dict = {X2:[[min(1, msg['throughput']/thr_max2), min(1, msg['latency']/lat_max2)]]})
+                print('AI가 결정한 품질 : ', int(p2[0][0]))
+                msg['quality'] = int(p2[0][0])
             if msg['type'] == 'music':
-                p = sess3.run([predictions3], feed_dict = {X3:[[min(1, msg['throughput']/thr_max3), min(1, msg['latency']/lat_max3)]]})
+                p3 = sess3.run([predictions3], feed_dict = {X3:[[min(1, msg['throughput']/thr_max3), min(1, msg['latency']/lat_max3)]]})
+                print('AI가 결정한 품질 : ', int(p3[0][0]))
+                msg['quality'] = int(p3[0][0])
         except Exception as e:
             print(e)
-        print('AI가 결정한 품질 : ', int(p[0][0]))
-        msg['quality'] = int(p[0][0])
         msg['reason'] = 'random'
         
         print('send', msg)
