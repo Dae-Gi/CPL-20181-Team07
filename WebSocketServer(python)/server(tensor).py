@@ -85,22 +85,16 @@ train3 = optimizer3.minimize(cost3)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for step in range(101):
+for step in range(20001):
    w, c, _ = sess.run([W1, cost1, train1], feed_dict = {X1: x_data1, Y1: y_data1})
    if step % 1000 == 0:
-      print(step, c)
-
-for step in range(101):
+      print("1 : ", step, c)
    w, c, _ = sess.run([W2, cost2, train2], feed_dict = {X2: x_data2, Y2: y_data2})
    if step % 1000 == 0:
-      print(step, c)
-
-for step in range(101):
+      print("2 : ", step, c)
    w, c, _ = sess.run([W3, cost3, train3], feed_dict = {X3: x_data3, Y3: y_data3})
    if step % 1000 == 0:
-      print(step, c)
-
-
+      print("3 : ", step, c)
 
 class SimpleEcho(WebSocket):
     def handleMessage(self):
