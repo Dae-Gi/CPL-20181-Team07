@@ -106,9 +106,9 @@ class SimpleEcho(WebSocket):
 
         if msg['type'] == 'default':
             p = sess.run([predictions1], feed_dict = {X1:[[min(1, msg['throughput']/thr_max1), min(1, msg['latency']/lat_max1)]]})
-        if msg['type'] == 'sport':
-            p = sess.run([predictions2], feed_dict = {X2:[[min(1, msg['throughput']/thr_max2), min(1, msg['latency']/lat_max2)]]})
         if msg['type'] == 'music':
+            p = sess.run([predictions2], feed_dict = {X2:[[min(1, msg['throughput']/thr_max2), min(1, msg['latency']/lat_max2)]]})
+        if msg['type'] == 'sport':
             p = sess.run([predictions3], feed_dict = {X3:[[min(1, msg['throughput']/thr_max3), min(1, msg['latency']/lat_max3)]]})
 
         print('AI가 결정한 품질 : ', int(p[0][0]))
